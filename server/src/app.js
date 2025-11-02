@@ -15,10 +15,8 @@ const app = express();
 // SECURITY MIDDLEWARE
 // ============================================
 
-// Set security HTTP headers
 app.use(helmet());
 
-// CORS Configuration
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
@@ -37,7 +35,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // DATA SANITIZATION
 // ============================================
 
-// Data sanitization against NoSQL injection
 app.use(mongoSanitize());
 
 // ============================================
@@ -105,18 +102,15 @@ const API_VERSION = process.env.API_VERSION || 'v1';
 const testRoutes = require('./routes/test.routes');
 app.use(`/api/${API_VERSION}/test`, testRoutes);
 
-// TODO: Phase 1 - Authentication routes
-// const authRoutes = require('./routes/auth.routes');
-// app.use(`/api/${API_VERSION}/auth`, authRoutes);
+// Authentication routes
+const authRoutes = require('./routes/auth.routes');
+app.use(`/api/${API_VERSION}/auth`, authRoutes);
 
 // ============================================
 // ERROR HANDLING
 // ============================================
 
-// 404 Handler
 app.use(notFound);
-
-// Global Error Handler
 app.use(errorHandler);
 
 module.exports = app;
