@@ -53,10 +53,10 @@ const createUserSchema = Joi.object({
       'any.required': 'Phone number is required',
     }),
   role: Joi.string()
-    .valid('dsr', 'backoffice', 'warehouse')
+    .valid('dsr', 'clerk')
     .required()
     .messages({
-      'any.only': 'Role must be one of: dsr, backoffice, warehouse',
+      'any.only': 'Role must be one of: dsr, clerk',
       'any.required': 'Role is required',
     }),
   address: Joi.object({
@@ -74,7 +74,7 @@ const updateUserSchema = Joi.object({
   firstName: Joi.string().max(50),
   lastName: Joi.string().max(50),
   phone: Joi.string().pattern(/^[0-9]{10}$/),
-  role: Joi.string().valid('dsr', 'backoffice', 'warehouse'),
+  role: Joi.string().valid('dsr', 'clerk'),
   address: Joi.object({
     street: Joi.string().allow(''),
     city: Joi.string().allow(''),

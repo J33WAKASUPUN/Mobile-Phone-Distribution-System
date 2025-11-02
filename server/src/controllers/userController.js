@@ -75,7 +75,7 @@ const getUsersByRole = async (req, res, next) => {
     const { role } = req.params;
 
     // Validate role
-    const validRoles = ['owner', 'dsr', 'backoffice', 'warehouse'];
+    const validRoles = ['owner', 'dsr', 'clerk'];
     if (!validRoles.includes(role)) {
       return next(new ApiError(400, 'Invalid role'));
     }

@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 /**
  * User Schema
- * Supports 4 roles: Owner, DSR, Back-office, Warehouse
+ * Supports 3 roles: Owner, DSR, Clerk
  */
 const userSchema = new mongoose.Schema(
   {
@@ -61,7 +61,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ['owner', 'dsr', 'backoffice', 'warehouse'],
+        values: ['owner', 'dsr', 'clerk'],
         message: '{VALUE} is not a valid role',
       },
       required: [true, 'User role is required'],

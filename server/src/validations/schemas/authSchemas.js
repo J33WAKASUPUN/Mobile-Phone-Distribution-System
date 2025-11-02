@@ -53,9 +53,9 @@ const registerSchema = Joi.object({
       'any.required': 'Phone number is required',
     }),
   role: Joi.string()
-    .valid('owner', 'dsr', 'backoffice', 'warehouse')
+    .valid('owner', 'dsr', 'clerk')
     .messages({
-      'any.only': 'Role must be one of: owner, dsr, backoffice, warehouse',
+      'any.only': 'Role must be one of: owner, dsr, clerk',
     }),
 });
 
