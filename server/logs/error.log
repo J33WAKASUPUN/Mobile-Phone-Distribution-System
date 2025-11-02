@@ -19,3 +19,9 @@
 {"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:20:11"}
 {"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:20:16"}
 {"level":"error","message":"403 - User role 'dsr' is not authorized to access this route - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:25:26"}
+{"level":"error","message":"401 - Not authorized. Please login. - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:25:14"}
+{"level":"error","message":"401 - Not authorized. Please login. - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:26:03"}
+{"level":"error","message":"400 - \"pricing\" is required - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:27:30"}
+{"level":"error","message":"404 - Product not found - /api/v1/inventory/products/6907807b1b3accb3d05dfbbf - PUT - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:36:21"}
+{"level":"error","message":"400 - \"status\" is required - /api/v1/inventory/phones/999888777666556/status - PATCH - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:51:46"}
+{"level":"error","message":"404 - Invoice not found - /api/v1/inventory/invoices/69076a5e7a60db5bcfc72a6c - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:54:29"}

@@ -2,6 +2,7 @@ const Joi = require('joi');
 
 /**
  * Create product validation schema
+ * NO PRICING OR WARRANTY - Only product specifications
  */
 const createProductSchema = Joi.object({
   brand: Joi.string()
@@ -41,16 +42,8 @@ const createProductSchema = Joi.object({
     weight: Joi.number().min(0),
   }),
 
-  pricing: Joi.object({
-    costPrice: Joi.number().required().min(0),
-    sellingPrice: Joi.number().required().min(0),
-    mrp: Joi.number().min(0),
-  }).required(),
-
-  warranty: Joi.object({
-    duration: Joi.number().default(12),
-    type: Joi.string().default('Manufacturer'),
-  }),
+  // ❌ REMOVED: pricing (pricing is per-invoice now)
+  // ❌ REMOVED: warranty (warranty is per-invoice now)
 
   description: Joi.string().allow(''),
   features: Joi.array().items(Joi.string()),
@@ -58,15 +51,22 @@ const createProductSchema = Joi.object({
   tags: Joi.array().items(Joi.string()),
   sku: Joi.string().allow(''),
   barcode: Joi.string().allow(''),
+  
+  images: Joi.object({
+    main: Joi.string().uri().allow(''),
+    gallery: Joi.array().items(Joi.string().uri()),
+  }),
 });
 
 /**
  * Update product validation schema
+ * NO PRICING OR WARRANTY - Only product specifications
  */
 const updateProductSchema = Joi.object({
   brand: Joi.string().uppercase().max(50),
   model: Joi.string().max(100),
   variant: Joi.string().max(100).allow(''),
+  
   specifications: Joi.object({
     storage: Joi.string(),
     ram: Joi.string(),
@@ -79,27 +79,28 @@ const updateProductSchema = Joi.object({
     simType: Joi.string().allow(''),
     connectivity: Joi.array().items(Joi.string()),
   }),
+  
   dimensions: Joi.object({
     height: Joi.number().min(0),
     width: Joi.number().min(0),
     thickness: Joi.number().min(0),
     weight: Joi.number().min(0),
   }),
-  pricing: Joi.object({
-    costPrice: Joi.number().min(0),
-    sellingPrice: Joi.number().min(0),
-    mrp: Joi.number().min(0),
-  }),
-  warranty: Joi.object({
-    duration: Joi.number(),
-    type: Joi.string(),
-  }),
+
+  // ❌ REMOVED: pricing
+  // ❌ REMOVED: warranty
+
   isActive: Joi.boolean(),
   isDiscontinued: Joi.boolean(),
   description: Joi.string().allow(''),
   features: Joi.array().items(Joi.string()),
   boxContents: Joi.array().items(Joi.string()),
   tags: Joi.array().items(Joi.string()),
+  
+  images: Joi.object({
+    main: Joi.string().uri().allow(''),
+    gallery: Joi.array().items(Joi.string().uri()),
+  }),
 });
 
 /**
@@ -144,12 +145,12 @@ const createPurchaseInvoiceSchema = Joi.object({
             'string.pattern.base': 'IMEI must be exactly 15 digits',
           }),
         serialNumber: Joi.string().allow(''),
-        costPrice: Joi.number().required().min(0),
-        sellingPrice: Joi.number().required().min(0),
+        costPrice: Joi.number().required().min(0),        // ✅ Pricing per phone
+        sellingPrice: Joi.number().required().min(0),     // ✅ Pricing per phone
         condition: Joi.string()
           .valid('New', 'Refurbished', 'Open Box', 'Like New')
           .default('New'),
-        warrantyExpiryDate: Joi.date(),
+        warrantyExpiryDate: Joi.date(),                   // ✅ Warranty per phone
         notes: Joi.string().allow(''),
       })
     )

@@ -21,14 +21,14 @@ const seedInventory = async () => {
       process.exit(1);
     }
 
-    // Clear existing data (optional - comment out if you want to keep existing data)
+    // Clear existing data
     console.log('🗑️  Clearing existing inventory data...');
     await Product.deleteMany({});
     await PurchaseInvoice.deleteMany({});
     console.log('✅ Existing data cleared\n');
 
     // ============================================
-    // 1. CREATE PRODUCT CATALOG
+    // 1. CREATE PRODUCT CATALOG (NO PRICING!)
     // ============================================
     console.log('📱 Creating product catalog...\n');
 
@@ -50,12 +50,6 @@ const seedInventory = async () => {
           simType: 'Dual SIM',
           connectivity: ['5G', 'WiFi 6E', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 280000,
-          sellingPrice: 310000,
-          mrp: 320000,
-        },
-        warranty: { duration: 12, type: 'Manufacturer' },
         description: 'Flagship Samsung phone with best-in-class camera',
         features: ['S Pen included', '120Hz Display', 'Gorilla Glass Victus 2'],
         boxContents: ['Phone', 'S Pen', 'USB-C Cable', 'SIM Ejector Tool', 'Quick Start Guide'],
@@ -78,12 +72,6 @@ const seedInventory = async () => {
           simType: 'Dual SIM',
           connectivity: ['5G', 'WiFi 6', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 75000,
-          sellingPrice: 85000,
-          mrp: 89999,
-        },
-        warranty: { duration: 12, type: 'Manufacturer' },
         description: 'Mid-range Samsung with excellent value',
         features: ['IP67 Water Resistance', '120Hz Display', 'Optical Stabilization'],
         boxContents: ['Phone', 'USB-C Cable', '25W Charger', 'SIM Ejector Tool'],
@@ -108,12 +96,6 @@ const seedInventory = async () => {
           simType: 'Dual eSIM + Physical SIM',
           connectivity: ['5G', 'WiFi 6E', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 420000,
-          sellingPrice: 450000,
-          mrp: 469999,
-        },
-        warranty: { duration: 12, type: 'Apple Limited Warranty' },
         description: 'Latest iPhone with titanium design and A17 Pro chip',
         features: ['Titanium Build', 'Action Button', 'Always-On Display', 'ProMotion 120Hz'],
         boxContents: ['iPhone', 'USB-C Cable', 'SIM Ejector Tool', 'Documentation'],
@@ -136,12 +118,6 @@ const seedInventory = async () => {
           simType: 'Dual eSIM + Physical SIM',
           connectivity: ['5G', 'WiFi 6', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 180000,
-          sellingPrice: 199000,
-          mrp: 209999,
-        },
-        warranty: { duration: 12, type: 'Apple Limited Warranty' },
         description: 'Previous generation iPhone with reliable performance',
         features: ['Ceramic Shield', 'Crash Detection', 'Emergency SOS'],
         boxContents: ['iPhone', 'USB-C to Lightning Cable', 'Documentation'],
@@ -166,12 +142,6 @@ const seedInventory = async () => {
           simType: 'Dual SIM',
           connectivity: ['5G', 'WiFi 6', 'Bluetooth 5.2'],
         },
-        pricing: {
-          costPrice: 55000,
-          sellingPrice: 62000,
-          mrp: 64999,
-        },
-        warranty: { duration: 12, type: 'Manufacturer' },
         description: 'Feature-packed Xiaomi with 200MP camera',
         features: ['120Hz AMOLED', '67W Fast Charging', 'IP54 Rating'],
         boxContents: ['Phone', '67W Charger', 'USB-C Cable', 'Clear Case', 'SIM Ejector Tool'],
@@ -196,16 +166,10 @@ const seedInventory = async () => {
           simType: 'Dual SIM',
           connectivity: ['5G', 'WiFi 6E', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 120000,
-          sellingPrice: 135000,
-          mrp: 139999,
-        },
-        warranty: { duration: 12, type: 'Manufacturer' },
-        description: 'OnePlus flagship with Hasselblad camera tuning',
-        features: ['Hasselblad Camera', '100W SuperVOOC', 'Alert Slider'],
-        boxContents: ['Phone', '100W Charger', 'USB-C Cable', 'Red Cable', 'Case', 'SIM Tool'],
-        tags: ['flagship', 'fast-charging', 'hasselblad'],
+        description: 'OnePlus flagship with Hasselblad camera',
+        features: ['Hasselblad Camera', '100W Fast Charging', 'Alert Slider'],
+        boxContents: ['Phone', '100W Charger', 'USB-C Cable', 'Case', 'SIM Tool'],
+        tags: ['flagship', 'fast-charging', 'oneplus'],
         createdBy: owner._id,
       },
 
@@ -223,15 +187,9 @@ const seedInventory = async () => {
           camera: '50MP + 48MP + 48MP',
           processor: 'Google Tensor G3',
           os: 'Android 14',
-          simType: 'Dual eSIM',
+          simType: 'Dual eSIM + Physical SIM',
           connectivity: ['5G', 'WiFi 6E', 'Bluetooth 5.3'],
         },
-        pricing: {
-          costPrice: 240000,
-          sellingPrice: 260000,
-          mrp: 269999,
-        },
-        warranty: { duration: 12, type: 'Google Limited Warranty' },
         description: 'Pure Android experience with AI-powered features',
         features: ['Magic Eraser', 'Best Take', 'Night Sight', '7 Years Updates'],
         boxContents: ['Phone', 'USB-C Cable', '1m Cable', 'Quick Switch Adapter', 'SIM Tool'],
@@ -245,11 +203,11 @@ const seedInventory = async () => {
 
     // Display created products
     createdProducts.forEach((product, index) => {
-      console.log(`${index + 1}. ${product.displayName} - Rs. ${product.pricing.sellingPrice.toLocaleString()}`);
+      console.log(`${index + 1}. ${product.displayName}`);
     });
 
     // ============================================
-    // 2. CREATE PURCHASE INVOICE WITH INVENTORY
+    // 2. CREATE PURCHASE INVOICE WITH PRICING
     // ============================================
     console.log('\n\n💰 Creating purchase invoice with stock...\n');
 
@@ -264,20 +222,20 @@ const seedInventory = async () => {
     // Add 3 units of Samsung S23 Ultra
     for (let i = 0; i < 3; i++) {
       phonesForInvoice.push({
-        product: createdProducts[0]._id, // Samsung S23 Ultra
+        product: createdProducts[0]._id,
         imei: generateIMEI(),
-        costPrice: 280000,
-        sellingPrice: 310000,
+        costPrice: 280000,              // ✅ Pricing here!
+        sellingPrice: 310000,           // ✅ Pricing here!
         condition: 'New',
         status: 'Available',
-        warrantyExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        warrantyExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
       });
     }
 
     // Add 5 units of Samsung A54
     for (let i = 0; i < 5; i++) {
       phonesForInvoice.push({
-        product: createdProducts[1]._id, // Samsung A54
+        product: createdProducts[1]._id,
         imei: generateIMEI(),
         costPrice: 75000,
         sellingPrice: 85000,
@@ -290,7 +248,7 @@ const seedInventory = async () => {
     // Add 2 units of iPhone 15 Pro Max
     for (let i = 0; i < 2; i++) {
       phonesForInvoice.push({
-        product: createdProducts[2]._id, // iPhone 15 Pro Max
+        product: createdProducts[2]._id,
         imei: generateIMEI(),
         costPrice: 420000,
         sellingPrice: 450000,
@@ -303,7 +261,7 @@ const seedInventory = async () => {
     // Add 4 units of iPhone 14
     for (let i = 0; i < 4; i++) {
       phonesForInvoice.push({
-        product: createdProducts[3]._id, // iPhone 14
+        product: createdProducts[3]._id,
         imei: generateIMEI(),
         costPrice: 180000,
         sellingPrice: 199000,
@@ -316,7 +274,7 @@ const seedInventory = async () => {
     // Add 6 units of Redmi Note 13 Pro
     for (let i = 0; i < 6; i++) {
       phonesForInvoice.push({
-        product: createdProducts[4]._id, // Redmi Note 13 Pro
+        product: createdProducts[4]._id,
         imei: generateIMEI(),
         costPrice: 55000,
         sellingPrice: 62000,
@@ -329,7 +287,7 @@ const seedInventory = async () => {
     // Add 3 units of OnePlus 11
     for (let i = 0; i < 3; i++) {
       phonesForInvoice.push({
-        product: createdProducts[5]._id, // OnePlus 11
+        product: createdProducts[5]._id,
         imei: generateIMEI(),
         costPrice: 120000,
         sellingPrice: 135000,
@@ -342,7 +300,7 @@ const seedInventory = async () => {
     // Add 2 units of Pixel 8 Pro
     for (let i = 0; i < 2; i++) {
       phonesForInvoice.push({
-        product: createdProducts[6]._id, // Pixel 8 Pro
+        product: createdProducts[6]._id,
         imei: generateIMEI(),
         costPrice: 240000,
         sellingPrice: 260000,
@@ -379,7 +337,7 @@ const seedInventory = async () => {
       payment: {
         method: 'Bank Transfer',
         status: 'Paid',
-        paidAmount: 0, // Will be calculated by pre-save hook
+        paidAmount: 0,
         paymentDate: new Date('2025-01-01'),
         referenceNumber: 'BT-2025-001',
       },
@@ -423,25 +381,32 @@ const seedInventory = async () => {
         },
       },
       { $unwind: '$productDetails' },
-      { $sort: { count: -1 } },
+      { $sort: { 'productDetails.brand': 1, 'productDetails.model': 1 } },
     ]);
 
     summary.forEach((item, index) => {
-      const product = item.productDetails;
-      console.log(`${index + 1}. ${product.brand} ${product.model}`);
-      console.log(`   Stock: ${item.count} units`);
-      console.log(`   Total Value: Rs. ${item.totalSellingPrice.toLocaleString()}`);
-      console.log(`   Expected Profit: Rs. ${(item.totalSellingPrice - item.totalCost).toLocaleString()}`);
-      console.log();
+      const profit = item.totalSellingPrice - item.totalCost;
+      console.log(
+        `${(index + 1).toString().padEnd(3)} ${item.productDetails.displayName.padEnd(50)} ` +
+        `Qty: ${item.count.toString().padStart(2)}  ` +
+        `Cost: Rs. ${item.totalCost.toLocaleString().padStart(10)}  ` +
+        `Sell: Rs. ${item.totalSellingPrice.toLocaleString().padStart(10)}  ` +
+        `Profit: Rs. ${profit.toLocaleString().padStart(8)}`
+      );
     });
 
     console.log('='.repeat(80));
-    console.log('\n✅ Inventory seeding completed successfully!\n');
-    
+    console.log(`\nTotal Available Stock: ${summary.reduce((sum, item) => sum + item.count, 0)} phones`);
+    console.log(`Total Inventory Value: Rs. ${summary.reduce((sum, item) => sum + item.totalCost, 0).toLocaleString()}`);
+    console.log(`Expected Revenue: Rs. ${summary.reduce((sum, item) => sum + item.totalSellingPrice, 0).toLocaleString()}`);
+    console.log(`Expected Profit: Rs. ${summary.reduce((sum, item) => sum + (item.totalSellingPrice - item.totalCost), 0).toLocaleString()}\n`);
+
+    console.log('✅ Inventory seeding completed successfully!\n');
+
     process.exit(0);
   } catch (error) {
     console.error('❌ Error seeding inventory:', error.message);
-    console.error(error.stack);
+    console.error(error);
     process.exit(1);
   }
 };

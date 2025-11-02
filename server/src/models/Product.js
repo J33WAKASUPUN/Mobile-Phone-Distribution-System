@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 /**
  * Product Schema
  * Master catalog of mobile phone models
+ * Contains ONLY phone specifications - NO pricing or warranty
  */
 const productSchema = new mongoose.Schema(
   {
@@ -56,36 +57,6 @@ const productSchema = new mongoose.Schema(
       weight: Number,
     },
 
-    // Pricing
-    pricing: {
-      costPrice: {
-        type: Number,
-        required: [true, 'Cost price is required'],
-        min: 0,
-      },
-      sellingPrice: {
-        type: Number,
-        required: [true, 'Selling price is required'],
-        min: 0,
-      },
-      mrp: {
-        type: Number,
-        min: 0,
-      },
-    },
-
-    // Warranty & Support
-    warranty: {
-      duration: {
-        type: Number,
-        default: 12,
-      },
-      type: {
-        type: String,
-        default: 'Manufacturer',
-      },
-    },
-
     // Product Status
     isActive: {
       type: Boolean,
@@ -133,17 +104,11 @@ const productSchema = new mongoose.Schema(
   }
 );
 
-// ============================================
-// INDEXES
-// ============================================
+// Indexes
 productSchema.index({ brand: 1, model: 1, 'specifications.color': 1 });
 productSchema.index({ isActive: 1, isDiscontinued: 1 });
-productSchema.index({ 'pricing.sellingPrice': 1 });
 
-// ============================================
-// VIRTUALS
-// ============================================
-
+// Virtuals
 productSchema.virtual('fullName').get(function () {
   const parts = [this.brand, this.model];
   if (this.variant) parts.push(this.variant);
@@ -154,24 +119,7 @@ productSchema.virtual('displayName').get(function () {
   return `${this.brand} ${this.model} ${this.specifications.storage} ${this.specifications.color}`;
 });
 
-productSchema.virtual('profitMargin').get(function () {
-  if (this.pricing.costPrice && this.pricing.sellingPrice) {
-    return this.pricing.sellingPrice - this.pricing.costPrice;
-  }
-  return 0;
-});
-
-productSchema.virtual('profitPercentage').get(function () {
-  if (this.pricing.costPrice && this.pricing.sellingPrice) {
-    return ((this.pricing.sellingPrice - this.pricing.costPrice) / this.pricing.costPrice) * 100;
-  }
-  return 0;
-});
-
-// ============================================
-// METHODS
-// ============================================
-
+// Methods
 productSchema.methods.getPublicInfo = function () {
   return {
     id: this._id,
@@ -182,20 +130,12 @@ productSchema.methods.getPublicInfo = function () {
     displayName: this.displayName,
     specifications: this.specifications,
     dimensions: this.dimensions,
-    pricing: {
-      sellingPrice: this.pricing.sellingPrice,
-      mrp: this.pricing.mrp,
-    },
-    warranty: this.warranty,
     images: this.images,
     features: this.features,
+    description: this.description,
+    boxContents: this.boxContents,
     isActive: this.isActive,
   };
 };
 
-// ============================================
-// EXPORT MODEL (FIX FOR OVERWRITE ERROR)
-// ============================================
-
-// Check if model exists before creating it
 module.exports = mongoose.models.Product || mongoose.model('Product', productSchema);
