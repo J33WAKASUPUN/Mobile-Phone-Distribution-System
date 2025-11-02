@@ -224,8 +224,8 @@ const seedInventory = async () => {
       phonesForInvoice.push({
         product: createdProducts[0]._id,
         imei: generateIMEI(),
-        costPrice: 280000,              // ✅ Pricing here!
-        sellingPrice: 310000,           // ✅ Pricing here!
+        costPrice: 280000,  
+        sellingPrice: 310000, 
         condition: 'New',
         status: 'Available',
         warrantyExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
