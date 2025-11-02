@@ -110,6 +110,10 @@ app.use(`/api/${API_VERSION}/auth`, authRoutes);
 const userRoutes = require('./routes/user.routes');
 app.use(`/api/${API_VERSION}/users`, userRoutes);
 
+// Inventory management routes
+const inventoryRoutes = require('./routes/inventory.routes');
+app.use(`/api/${API_VERSION}/inventory`, inventoryRoutes);
+
 // ============================================
 // ERROR HANDLING
 // ============================================

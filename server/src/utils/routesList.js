@@ -61,6 +61,8 @@ const displayRoutesTable = (routes) => {
     'Health & System': [],
     'Authentication': [],
     'User Management': [],
+    'Inventory & Products': [],
+    'Purchase Invoices': [],
     'Testing': [],
     'Other': [],
   };
@@ -72,6 +74,10 @@ const displayRoutesTable = (routes) => {
       categorized['Authentication'].push(route);
     } else if (route.path.includes('/users')) {
       categorized['User Management'].push(route);
+    } else if (route.path.includes('/inventory/products') || route.path.includes('/inventory/stock') || route.path.includes('/inventory/search') || route.path.includes('/inventory/statistics') || route.path.includes('/inventory/export')) {
+      categorized['Inventory & Products'].push(route);
+    } else if (route.path.includes('/inventory/invoices') || route.path.includes('/inventory/phones')) {
+      categorized['Purchase Invoices'].push(route);
     } else if (route.path.includes('/test')) {
       categorized['Testing'].push(route);
     } else {
@@ -81,7 +87,6 @@ const displayRoutesTable = (routes) => {
 
   let output = '\n';
   output += '📡 REGISTERED API ROUTES\n';
-
 
   Object.entries(categorized).forEach(([category, categoryRoutes]) => {
     if (categoryRoutes.length > 0) {

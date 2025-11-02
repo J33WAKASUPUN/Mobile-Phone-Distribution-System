@@ -13,3 +13,9 @@
 {"level":"error","message":"401 - Password was recently changed. Please login again. - /api/v1/users - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 19:00:44"}
 {"level":"error","message":"401 - Password was recently changed. Please login again. - /api/v1/users/role/dsr - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 19:01:59"}
 {"level":"error","message":"401 - Password was recently changed. Please login again. - /api/v1/users/69075cfa307a85cda79da21c - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 19:02:38"}
+{"level":"error","message":"401 - Not authorized. Please login. - /api/v1/inventory/export/excel - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:16:05"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:19:17"}
+{"level":"error","message":"400 - Email or username is required - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:19:46"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:20:11"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:20:16"}
+{"level":"error","message":"403 - User role 'dsr' is not authorized to access this route - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 20:25:26"}
