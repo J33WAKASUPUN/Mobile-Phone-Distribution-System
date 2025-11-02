@@ -106,6 +106,10 @@ app.use(`/api/${API_VERSION}/test`, testRoutes);
 const authRoutes = require('./routes/auth.routes');
 app.use(`/api/${API_VERSION}/auth`, authRoutes);
 
+// User management routes (Owner only)
+const userRoutes = require('./routes/user.routes');
+app.use(`/api/${API_VERSION}/users`, userRoutes);
+
 // ============================================
 // ERROR HANDLING
 // ============================================

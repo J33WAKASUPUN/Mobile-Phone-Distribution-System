@@ -1,1 +1,2 @@
 {"level":"error","message":"404 - Route /favicon.ico not found - /favicon.ico - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 13:55:03"}
+{"level":"error","message":"Failed to start server: getRegisteredRoutes is not a function","service":"mobile-distribution-api","timestamp":"2025-11-02 15:59:00"}

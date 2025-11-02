@@ -1,31 +1,63 @@
 const express = require('express');
 const {
-  testS3Connection,
-  testMongoConnection,
-  testAllServices,
-} = require('../controllers/testController');
+  register,
+  login,
+  getMe,
+  updateProfile,
+  changePassword,
+  logout,
+} = require('../controllers/authController');
+const { protect, authorize } = require('../middlewares/auth');
+const validate = require('../middlewares/validate');
+const {
+  registerSchema,
+  loginSchema,
+  updateProfileSchema,
+  changePasswordSchema,
+} = require('../validations/schemas/authSchemas');
 
 const router = express.Router();
 
 /**
- * @route   GET /api/v1/test/s3
- * @desc    Test AWS S3 connection
- * @access  Public (for testing only - remove in production)
+ * @route   POST /api/v1/auth/register
+ * @desc    Register a new user (Owner only)
+ * @access  Private (Owner role only)
  */
-router.get('/s3', testS3Connection);
+router.post('/register', protect, authorize('owner'), validate(registerSchema), register);
 
 /**
- * @route   GET /api/v1/test/mongodb
- * @desc    Test MongoDB connection
- * @access  Public (for testing only - remove in production)
+ * @route   POST /api/v1/auth/login
+ * @desc    Login user (All roles)
+ * @access  Public
  */
-router.get('/mongodb', testMongoConnection);
+router.post('/login', validate(loginSchema), login);
 
 /**
- * @route   GET /api/v1/test/all
- * @desc    Test all services (MongoDB + AWS S3)
- * @access  Public (for testing only - remove in production)
+ * @route   GET /api/v1/auth/me
+ * @desc    Get current user profile
+ * @access  Private
  */
-router.get('/all', testAllServices);
+router.get('/me', protect, getMe);
+
+/**
+ * @route   PUT /api/v1/auth/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+router.put('/profile', protect, validate(updateProfileSchema), updateProfile);
+
+/**
+ * @route   PUT /api/v1/auth/change-password
+ * @desc    Change user password
+ * @access  Private
+ */
+router.put('/change-password', protect, validate(changePasswordSchema), changePassword);
+
+/**
+ * @route   POST /api/v1/auth/logout
+ * @desc    Logout user
+ * @access  Private
+ */
+router.post('/logout', protect, logout);
 
 module.exports = router;
