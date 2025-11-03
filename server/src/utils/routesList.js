@@ -63,6 +63,8 @@ const displayRoutesTable = (routes) => {
     'User Management': [],
     'Inventory & Products': [],
     'Purchase Invoices': [],
+    'DSR Assignments': [],
+    'Import/Export': [],
     'Testing': [],
     'Other': [],
   };
@@ -74,7 +76,11 @@ const displayRoutesTable = (routes) => {
       categorized['Authentication'].push(route);
     } else if (route.path.includes('/users')) {
       categorized['User Management'].push(route);
-    } else if (route.path.includes('/inventory/products') || route.path.includes('/inventory/stock') || route.path.includes('/inventory/search') || route.path.includes('/inventory/statistics') || route.path.includes('/inventory/export')) {
+    } else if (route.path.includes('/dsr-assignments')) {
+      categorized['DSR Assignments'].push(route);
+    } else if (route.path.includes('/import') || route.path.includes('/export')) {
+      categorized['Import/Export'].push(route);
+    } else if (route.path.includes('/inventory/products') || route.path.includes('/inventory/stock') || route.path.includes('/inventory/search') || route.path.includes('/inventory/statistics')) {
       categorized['Inventory & Products'].push(route);
     } else if (route.path.includes('/inventory/invoices') || route.path.includes('/inventory/phones')) {
       categorized['Purchase Invoices'].push(route);
@@ -106,6 +112,12 @@ const displayRoutesTable = (routes) => {
   output += '\n';
 
   return output;
+};
+
+module.exports = {
+  getRegisteredRoutes,
+  displayRoutesTable,
+  getRouteSummary,
 };
 
 /**

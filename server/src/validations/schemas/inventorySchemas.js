@@ -193,7 +193,7 @@ const createPurchaseInvoiceSchema = Joi.object({
  */
 const updatePhoneStatusSchema = Joi.object({
   status: Joi.string()
-    .valid('Available', 'Reserved', 'Sold', 'Returned', 'Damaged', 'Transit')
+    .valid('Available', 'Assigned', 'Reserved', 'Sold', 'Returned', 'Damaged', 'Transit') // ✅ Added 'Assigned'
     .required(),
   soldDate: Joi.date().when('status', {
     is: 'Sold',

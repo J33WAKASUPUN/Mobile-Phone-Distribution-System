@@ -114,6 +114,10 @@ app.use(`/api/${API_VERSION}/users`, userRoutes);
 const inventoryRoutes = require('./routes/inventory.routes');
 app.use(`/api/${API_VERSION}/inventory`, inventoryRoutes);
 
+// DSR Assignment routes
+const dsrAssignmentRoutes = require('./routes/dsrAssignment.routes');
+app.use(`/api/${API_VERSION}/dsr-assignments`, dsrAssignmentRoutes);
+
 // ============================================
 // ERROR HANDLING
 // ============================================

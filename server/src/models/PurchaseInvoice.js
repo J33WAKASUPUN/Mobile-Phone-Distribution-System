@@ -91,7 +91,7 @@ const purchaseInvoiceSchema = new mongoose.Schema(
         
         status: {
           type: String,
-          enum: ['Available', 'Reserved', 'Sold', 'Returned', 'Damaged', 'Transit'],
+          enum: ['Available', 'Assigned', 'Reserved', 'Sold', 'Returned', 'Damaged', 'Transit'],
           default: 'Available',
           index: true,
         },
