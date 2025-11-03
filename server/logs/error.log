@@ -25,3 +25,4 @@
 {"level":"error","message":"404 - Product not found - /api/v1/inventory/products/6907807b1b3accb3d05dfbbf - PUT - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:36:21"}
 {"level":"error","message":"400 - \"status\" is required - /api/v1/inventory/phones/999888777666556/status - PATCH - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:51:46"}
 {"level":"error","message":"404 - Invoice not found - /api/v1/inventory/invoices/69076a5e7a60db5bcfc72a6c - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-02 21:54:29"}
+{"level":"error","message":"400 - Invalid file type. Allowed types: image/jpeg, image/png, image/jpg, application/pdf, text/csv - /api/v1/inventory/import/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-03 19:14:12"}

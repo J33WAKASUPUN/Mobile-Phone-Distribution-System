@@ -25,7 +25,12 @@ const {
   updatePhoneStatusSchema,
 } = require('../validations/schemas/inventorySchemas');
 const upload = require('../middlewares/upload');
-
+const {
+  downloadProductTemplate,
+  downloadInvoiceTemplate,
+  importProducts,
+  importInvoices,
+} = require('../controllers/importController');
 const router = express.Router();
 
 // ============================================
@@ -166,6 +171,50 @@ router.patch(
   authorize('owner'),
   validate(updatePhoneStatusSchema),
   updatePhoneStatus
+);
+
+// ============================================
+// IMPORT ROUTES (Add before module.exports)
+// ============================================
+
+/**
+ * @route   GET /api/v1/inventory/import/templates/products
+ * @desc    Download product import template
+ * @access  Private (Owner only)
+ */
+router.get('/import/templates/products', protect, authorize('owner'), downloadProductTemplate);
+
+/**
+ * @route   GET /api/v1/inventory/import/templates/invoices
+ * @desc    Download invoice import template
+ * @access  Private (Owner only)
+ */
+router.get('/import/templates/invoices', protect, authorize('owner'), downloadInvoiceTemplate);
+
+/**
+ * @route   POST /api/v1/inventory/import/products
+ * @desc    Import products from Excel
+ * @access  Private (Owner only)
+ */
+router.post(
+  '/import/products',
+  protect,
+  authorize('owner'),
+  upload.single('file'),
+  importProducts
+);
+
+/**
+ * @route   POST /api/v1/inventory/import/invoices
+ * @desc    Import purchase invoices from Excel
+ * @access  Private (Owner only)
+ */
+router.post(
+  '/import/invoices',
+  protect,
+  authorize('owner'),
+  upload.single('file'),
+  importInvoices
 );
 
 // ============================================

@@ -12,8 +12,16 @@ const storage = multer.memoryStorage();
 
 // File filter function
 const fileFilter = (req, file, cb) => {
-  // Allowed file types
-  const allowedTypes = (process.env.ALLOWED_FILE_TYPES || 'image/jpeg,image/png,image/jpg,application/pdf').split(',');
+  // Allowed file types (including Excel files for import)
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/jpg',
+    'application/pdf',
+    'text/csv',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+    'application/vnd.ms-excel', // .xls
+  ];
 
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -21,7 +29,7 @@ const fileFilter = (req, file, cb) => {
     cb(
       new ApiError(
         400,
-        `Invalid file type. Allowed types: ${allowedTypes.join(', ')}`
+        `Invalid file type: ${file.mimetype}. Allowed types: Excel (.xlsx, .xls), Images (JPEG, PNG), PDF, CSV`
       ),
       false
     );
@@ -32,7 +40,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB default
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10 * 1024 * 1024,
   },
   fileFilter: fileFilter,
 });
