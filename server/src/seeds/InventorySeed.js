@@ -28,7 +28,7 @@ const seedInventory = async () => {
     console.log('✅ Existing data cleared\n');
 
     // ============================================
-    // 1. CREATE PRODUCT CATALOG (NO PRICING!)
+    // 1. CREATE PRODUCT CATALOG
     // ============================================
     console.log('📱 Creating product catalog...\n');
 
@@ -211,6 +211,21 @@ const seedInventory = async () => {
     // ============================================
     console.log('\n\n💰 Creating purchase invoice with stock...\n');
 
+    // ✅ BETTER APPROACH: Find products by brand/model
+    const samsungS23 = await Product.findOne({ brand: 'SAMSUNG', model: 'Galaxy S23 Ultra' });
+    const samsungA54 = await Product.findOne({ brand: 'SAMSUNG', model: 'Galaxy A54' });
+    const iphone15Pro = await Product.findOne({ brand: 'APPLE', model: 'iPhone 15 Pro Max' });
+    const iphone14 = await Product.findOne({ brand: 'APPLE', model: 'iPhone 14' });
+    const redmiNote13 = await Product.findOne({ brand: 'XIAOMI', model: 'Redmi Note 13 Pro' });
+    const oneplus11 = await Product.findOne({ brand: 'ONEPLUS', model: 'OnePlus 11' });
+    const pixel8Pro = await Product.findOne({ brand: 'GOOGLE', model: 'Pixel 8 Pro' });
+
+    // Verify all products found
+    if (!samsungS23 || !samsungA54 || !iphone15Pro || !iphone14 || !redmiNote13 || !oneplus11 || !pixel8Pro) {
+      console.error('❌ Some products not found!');
+      process.exit(1);
+    }
+
     // Helper function to generate random IMEI
     const generateIMEI = () => {
       return Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
@@ -222,10 +237,10 @@ const seedInventory = async () => {
     // Add 3 units of Samsung S23 Ultra
     for (let i = 0; i < 3; i++) {
       phonesForInvoice.push({
-        product: createdProducts[0]._id,
+        product: samsungS23._id,  // ✅ Direct reference
         imei: generateIMEI(),
-        costPrice: 280000,  
-        sellingPrice: 310000, 
+        costPrice: 280000,
+        sellingPrice: 310000,
         condition: 'New',
         status: 'Available',
         warrantyExpiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
@@ -235,7 +250,7 @@ const seedInventory = async () => {
     // Add 5 units of Samsung A54
     for (let i = 0; i < 5; i++) {
       phonesForInvoice.push({
-        product: createdProducts[1]._id,
+        product: samsungA54._id,
         imei: generateIMEI(),
         costPrice: 75000,
         sellingPrice: 85000,
@@ -248,7 +263,7 @@ const seedInventory = async () => {
     // Add 2 units of iPhone 15 Pro Max
     for (let i = 0; i < 2; i++) {
       phonesForInvoice.push({
-        product: createdProducts[2]._id,
+        product: iphone15Pro._id,
         imei: generateIMEI(),
         costPrice: 420000,
         sellingPrice: 450000,
@@ -261,7 +276,7 @@ const seedInventory = async () => {
     // Add 4 units of iPhone 14
     for (let i = 0; i < 4; i++) {
       phonesForInvoice.push({
-        product: createdProducts[3]._id,
+        product: iphone14._id,
         imei: generateIMEI(),
         costPrice: 180000,
         sellingPrice: 199000,
@@ -274,7 +289,7 @@ const seedInventory = async () => {
     // Add 6 units of Redmi Note 13 Pro
     for (let i = 0; i < 6; i++) {
       phonesForInvoice.push({
-        product: createdProducts[4]._id,
+        product: redmiNote13._id,
         imei: generateIMEI(),
         costPrice: 55000,
         sellingPrice: 62000,
@@ -287,7 +302,7 @@ const seedInventory = async () => {
     // Add 3 units of OnePlus 11
     for (let i = 0; i < 3; i++) {
       phonesForInvoice.push({
-        product: createdProducts[5]._id,
+        product: oneplus11._id,
         imei: generateIMEI(),
         costPrice: 120000,
         sellingPrice: 135000,
@@ -300,7 +315,7 @@ const seedInventory = async () => {
     // Add 2 units of Pixel 8 Pro
     for (let i = 0; i < 2; i++) {
       phonesForInvoice.push({
-        product: createdProducts[6]._id,
+        product: pixel8Pro._id,
         imei: generateIMEI(),
         costPrice: 240000,
         sellingPrice: 260000,
@@ -359,8 +374,8 @@ const seedInventory = async () => {
     // 3. DISPLAY SUMMARY
     // ============================================
     console.log('\n📊 INVENTORY SUMMARY\n');
-    console.log('='.repeat(80));
-    
+    console.log('='.repeat(120));
+
     const summary = await PurchaseInvoice.aggregate([
       { $unwind: '$phones' },
       { $match: { 'phones.status': 'Available' } },
@@ -386,20 +401,34 @@ const seedInventory = async () => {
 
     summary.forEach((item, index) => {
       const profit = item.totalSellingPrice - item.totalCost;
+      
+      // ✅ Build display name manually
+      const brand = item.productDetails.brand || 'Unknown';
+      const model = item.productDetails.model || '';
+      const storage = item.productDetails.specifications?.storage || '';
+      const color = item.productDetails.specifications?.color || '';
+      const displayName = `${brand} ${model} ${storage} ${color}`.trim();
+      
       console.log(
-        `${(index + 1).toString().padEnd(3)} ${item.productDetails.displayName.padEnd(50)} ` +
+        `${(index + 1).toString().padEnd(3)} ${displayName.padEnd(60)} ` +
         `Qty: ${item.count.toString().padStart(2)}  ` +
-        `Cost: Rs. ${item.totalCost.toLocaleString().padStart(10)}  ` +
-        `Sell: Rs. ${item.totalSellingPrice.toLocaleString().padStart(10)}  ` +
-        `Profit: Rs. ${profit.toLocaleString().padStart(8)}`
+        `Cost: Rs. ${item.totalCost.toLocaleString().padStart(12)}  ` +
+        `Sell: Rs. ${item.totalSellingPrice.toLocaleString().padStart(12)}  ` +
+        `Profit: Rs. ${profit.toLocaleString().padStart(10)}`
       );
     });
 
-    console.log('='.repeat(80));
-    console.log(`\nTotal Available Stock: ${summary.reduce((sum, item) => sum + item.count, 0)} phones`);
-    console.log(`Total Inventory Value: Rs. ${summary.reduce((sum, item) => sum + item.totalCost, 0).toLocaleString()}`);
-    console.log(`Expected Revenue: Rs. ${summary.reduce((sum, item) => sum + item.totalSellingPrice, 0).toLocaleString()}`);
-    console.log(`Expected Profit: Rs. ${summary.reduce((sum, item) => sum + (item.totalSellingPrice - item.totalCost), 0).toLocaleString()}\n`);
+    console.log('='.repeat(120));
+    
+    const totalStock = summary.reduce((sum, item) => sum + item.count, 0);
+    const totalValue = summary.reduce((sum, item) => sum + item.totalCost, 0);
+    const totalRevenue = summary.reduce((sum, item) => sum + item.totalSellingPrice, 0);
+    const totalProfit = summary.reduce((sum, item) => sum + (item.totalSellingPrice - item.totalCost), 0);
+    
+    console.log(`\nTotal Available Stock: ${totalStock} phones`);
+    console.log(`Total Inventory Value: Rs. ${totalValue.toLocaleString()}`);
+    console.log(`Expected Revenue: Rs. ${totalRevenue.toLocaleString()}`);
+    console.log(`Expected Profit: Rs. ${totalProfit.toLocaleString()}\n`);
 
     console.log('✅ Inventory seeding completed successfully!\n');
 

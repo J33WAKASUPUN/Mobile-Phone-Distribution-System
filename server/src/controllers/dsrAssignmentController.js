@@ -50,6 +50,19 @@ const createAssignment = async (req, res, next) => {
 
       const phone = invoice.phones.find((p) => p.imei === phoneData.imei);
 
+      if (!phone) {
+        return next(
+          new ApiError(404, `Phone with IMEI ${phoneData.imei} not found in invoice`)
+        );
+      }
+
+      // ✅ FIX: Check if product exists
+      if (!phone.product || !phone.product._id) {
+        return next(
+          new ApiError(500, `Product reference missing for IMEI ${phoneData.imei}. Please contact administrator.`)
+        );
+      }
+
       if (phone.status !== "Available") {
         return next(
           new ApiError(
