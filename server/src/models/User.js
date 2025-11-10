@@ -93,6 +93,9 @@ const userSchema = new mongoose.Schema(
     passwordChangedAt: {
       type: Date,
     },
+    lastTokenIssuedAt: {
+      type: Date,
+    },
     passwordResetToken: String,
     passwordResetExpires: Date,
     
@@ -187,12 +190,18 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
  * @returns {string} JWT token
  */
 userSchema.methods.generateAuthToken = function () {
+  // Update lastTokenIssuedAt BEFORE generating token
+  const now = Math.floor(Date.now() / 1000);
+  
   return jwt.sign(
     {
-      id: this._id,
+      id: this._id.toString(),
       username: this.username,
       email: this.email,
       role: this.role,
+      iat: now, // Issued at timestamp
+      // Store this timestamp to invalidate old tokens
+      tokenVersion: now,
     },
     process.env.JWT_SECRET,
     {
@@ -212,7 +221,24 @@ userSchema.methods.changedPasswordAfter = function (jwtTimestamp) {
       this.passwordChangedAt.getTime() / 1000,
       10
     );
-    return jwtTimestamp < changedTimestamp;
+    return changedTimestamp > jwtTimestamp;
+  }
+  return false;
+};
+
+/**
+ * Check if token was issued before last login
+ * @param {number} jwtTimestamp - JWT issued timestamp
+ * @returns {boolean} True if token is outdated
+ */
+userSchema.methods.isTokenOutdated = function (jwtTimestamp) {
+  if (this.lastTokenIssuedAt) {
+    const lastTokenTimestamp = parseInt(
+      this.lastTokenIssuedAt.getTime() / 1000,
+      10
+    );
+    // Token is outdated if it was issued before the last token
+    return jwtTimestamp < lastTokenTimestamp;
   }
   return false;
 };

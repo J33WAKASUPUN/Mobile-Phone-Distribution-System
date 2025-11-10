@@ -64,10 +64,11 @@ const login = async (req, res, next) => {
       return next(new ApiError(400, 'Please provide email/username and password'));
     }
 
-    // Find user by email or username
+    // Find user by email or username (with password field)
     const user = await User.findByCredentials(credential);
 
     if (!user) {
+      logger.warn(`Failed login attempt: User not found for credential ${credential}`);
       return next(new ApiError(401, 'Invalid credentials'));
     }
 
@@ -75,22 +76,28 @@ const login = async (req, res, next) => {
     const isPasswordMatch = await user.comparePassword(password);
 
     if (!isPasswordMatch) {
+      logger.warn(`Failed login attempt: Invalid password for user ${user.email}`);
       return next(new ApiError(401, 'Invalid credentials'));
     }
 
     // Check if account is active
     if (!user.isActive) {
+      logger.warn(`Inactive account login attempt: ${user.email}`);
       return next(new ApiError(403, 'Your account has been deactivated. Please contact administrator.'));
     }
 
-    // Update last login
+    // Update last login timestamp
     user.lastLogin = Date.now();
+    
+    // Update lastTokenIssuedAt to invalidate old tokens
+    user.lastTokenIssuedAt = Date.now();
+    
     await user.save({ validateBeforeSave: false });
 
-    // Generate JWT token
+    // Generate fresh JWT token (old tokens are now invalid)
     const token = user.generateAuthToken();
 
-    logger.info(`User logged in: ${user.email} (${user.role})`);
+    logger.info(`User logged in successfully: ${user.email} (${user.role}). Old sessions invalidated.`);
 
     res.status(200).json({
       success: true,
@@ -98,9 +105,11 @@ const login = async (req, res, next) => {
       data: {
         user: user.getPublicProfile(),
         token,
+        tokenExpiry: process.env.JWT_EXPIRE || '7d',
       },
     });
   } catch (error) {
+    logger.error(`Login error: ${error.message}`);
     next(error);
   }
 };
@@ -203,26 +212,33 @@ const changePassword = async (req, res, next) => {
     const isPasswordMatch = await user.comparePassword(currentPassword);
 
     if (!isPasswordMatch) {
+      logger.warn(`Failed password change attempt for user: ${user.email}`);
       return next(new ApiError(401, 'Current password is incorrect'));
     }
 
-    // Update password
+    // Update password (this will trigger pre-save hook to hash it)
     user.password = newPassword;
+    
+    // Set passwordChangedAt to NOW to invalidate old tokens
+    user.passwordChangedAt = Date.now();
+    
     await user.save();
 
-    // Generate new token
+    // Generate new token with updated timestamp
     const token = user.generateAuthToken();
 
-    logger.info(`Password changed for user: ${user.email}`);
+    logger.info(`Password changed successfully for user: ${user.email}`);
 
     res.status(200).json({
       success: true,
-      message: 'Password changed successfully',
+      message: 'Password changed successfully. Please use the new token for future requests.',
       data: {
         token,
+        user: user.getPublicProfile(),
       },
     });
   } catch (error) {
+    logger.error(`Password change error: ${error.message}`);
     next(error);
   }
 };
@@ -245,6 +261,27 @@ const logout = async (req, res, next) => {
   }
 };
 
+/**
+ * Validate current token
+ * @route GET /api/v1/auth/validate-token
+ * @access Private
+ */
+const validateToken = async (req, res, next) => {
+  try {
+    // If we reach here, token is valid (protect middleware already validated it)
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid',
+      data: {
+        user: req.user.getPublicProfile(),
+        tokenValid: true,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -252,4 +289,5 @@ module.exports = {
   updateProfile,
   changePassword,
   logout,
+  validateToken,
 };

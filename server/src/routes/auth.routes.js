@@ -6,6 +6,7 @@ const {
   updateProfile,
   changePassword,
   logout,
+  validateToken,
 } = require('../controllers/authController');
 const { protect, authorize } = require('../middlewares/auth');
 const validate = require('../middlewares/validate');
@@ -59,5 +60,12 @@ router.put('/change-password', protect, validate(changePasswordSchema), changePa
  * @access  Private
  */
 router.post('/logout', protect, logout);
+
+/**
+ * @route   GET /api/v1/auth/validate-token
+ * @desc    Validate current JWT token
+ * @access  Private
+ */
+router.get('/validate-token', protect, validateToken);
 
 module.exports = router;
