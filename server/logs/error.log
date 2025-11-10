@@ -42,3 +42,6 @@
 {"level":"error","message":"401 - Password was recently changed. Please login again. - /api/v1/auth/me - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-06 03:15:17"}
 {"level":"error","message":"404 - Invoice not found - /api/v1/inventory/invoices/690782991b3accb3d05dfbd0 - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-06 03:16:33"}
 {"level":"error","message":"403 - Access denied. User role 'clerk' is not authorized. Required roles: owner - /api/v1/inventory/products - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-06 03:38:42"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-10 13:37:12"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-10 13:37:36"}
+{"level":"error","message":"401 - Invalid credentials - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-10 13:38:22"}

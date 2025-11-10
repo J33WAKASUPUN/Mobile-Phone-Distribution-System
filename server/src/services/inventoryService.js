@@ -32,29 +32,44 @@ class InventoryService {
   }
 
   /**
-   * Get available stock summary
+   * Get available stock summary (UPDATED - includes individual phones)
    */
   static async getAvailableStock() {
     const result = await PurchaseInvoice.aggregate([
       { $unwind: '$phones' },
       { $match: { 'phones.status': 'Available' } },
       {
-        $group: {
-          _id: '$phones.product',
-          count: { $sum: 1 },
-          totalCost: { $sum: '$phones.costPrice' },
-          totalSellingPrice: { $sum: '$phones.sellingPrice' },
-        },
-      },
-      {
         $lookup: {
           from: 'products',
-          localField: '_id',
+          localField: 'phones.product',
           foreignField: '_id',
           as: 'productDetails',
         },
       },
       { $unwind: '$productDetails' },
+      {
+        $group: {
+          _id: '$phones.product',
+          count: { $sum: 1 },
+          totalCost: { $sum: '$phones.costPrice' },
+          totalSellingPrice: { $sum: '$phones.sellingPrice' },
+          productDetails: { $first: '$productDetails' },
+          // Collect individual phones with IMEI
+          phones: {
+            $push: {
+              imei: '$phones.imei',
+              costPrice: '$phones.costPrice',
+              sellingPrice: '$phones.sellingPrice',
+              condition: '$phones.condition',
+              warrantyExpiryDate: '$phones.warrantyExpiryDate',
+              invoiceNumber: '$invoiceNumber',
+              invoiceId: '$_id',
+              addedAt: '$phones.addedAt',
+            },
+          },
+        },
+      },
+      { $sort: { 'productDetails.brand': 1, 'productDetails.model': 1 } },
     ]);
 
     return result;
@@ -113,6 +128,56 @@ class InventoryService {
         },
       },
       { $unwind: '$productDetails' },
+    ]);
+
+    return result;
+  }
+
+  /**
+   * Get detailed available stock (alternative method - flattened view)
+   */
+  static async getAvailableStockDetailed() {
+    const result = await PurchaseInvoice.aggregate([
+      { $unwind: '$phones' },
+      { $match: { 'phones.status': 'Available' } },
+      {
+        $lookup: {
+          from: 'products',
+          localField: 'phones.product',
+          foreignField: '_id',
+          as: 'productDetails',
+        },
+      },
+      { $unwind: '$productDetails' },
+      {
+        $project: {
+          _id: 0,
+          invoiceNumber: 1,
+          invoiceId: '$_id',
+          imei: '$phones.imei',
+          costPrice: '$phones.costPrice',
+          sellingPrice: '$phones.sellingPrice',
+          condition: '$phones.condition',
+          warrantyExpiryDate: '$phones.warrantyExpiryDate',
+          addedAt: '$phones.addedAt',
+          product: {
+            _id: '$productDetails._id',
+            brand: '$productDetails.brand',
+            model: '$productDetails.model',
+            variant: '$productDetails.variant',
+            specifications: '$productDetails.specifications',
+            features: '$productDetails.features',
+            images: '$productDetails.images',
+          },
+        },
+      },
+      {
+        $sort: {
+          'product.brand': 1,
+          'product.model': 1,
+          imei: 1,
+        },
+      },
     ]);
 
     return result;

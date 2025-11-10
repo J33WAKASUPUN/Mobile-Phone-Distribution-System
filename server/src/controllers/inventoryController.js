@@ -224,16 +224,47 @@ const searchByIMEI = async (req, res, next) => {
 };
 
 /**
- * Get available stock
+ * Get available stock (now includes individual phones with IMEI)
  * @route GET /api/v1/inventory/stock/available
  */
 const getAvailableStock = async (req, res, next) => {
   try {
+    const { view = 'grouped' } = req.query; // Support 'grouped' or 'detailed' view
+
+    if (view === 'detailed') {
+      // Return flat list of all available phones
+      const stock = await InventoryService.getAvailableStockDetailed();
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          view: 'detailed',
+          totalPhones: stock.length,
+          phones: stock,
+        },
+      });
+    }
+
+    // Default: Return grouped by product (with individual phone details)
     const stock = await InventoryService.getAvailableStock();
+
+    const totalPhones = stock.reduce((sum, item) => sum + item.count, 0);
+    const totalValue = stock.reduce((sum, item) => sum + item.totalCost, 0);
+    const totalRevenue = stock.reduce((sum, item) => sum + item.totalSellingPrice, 0);
 
     res.status(200).json({
       success: true,
-      data: { stock },
+      data: {
+        view: 'grouped',
+        summary: {
+          totalProducts: stock.length,
+          totalPhones: totalPhones,
+          totalInventoryValue: totalValue,
+          expectedRevenue: totalRevenue,
+          expectedProfit: totalRevenue - totalValue,
+        },
+        stock: stock,
+      },
     });
   } catch (error) {
     next(error);
