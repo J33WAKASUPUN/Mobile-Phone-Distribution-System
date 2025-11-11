@@ -1,10 +1,13 @@
 const DsrAssignment = require("../models/DsrAssignment");
+const DsrSchedule = require("../models/DsrSchedule");
 const PurchaseInvoice = require("../models/PurchaseInvoice");
 const User = require("../models/User");
 const { ApiError } = require("../middlewares/errorHandler");
 const logger = require("../utils/logger");
 const ExcelJS = require("exceljs");
 const telegramService = require("../services/telegramService");
+const { getSriLankaTime, getStartOfDaySriLanka, getEndOfDaySriLanka } = require('../utils/dateUtils');
+
 
 /**
  * Generate assignment number
@@ -32,62 +35,96 @@ const createAssignment = async (req, res, next) => {
     // Validate DSR exists and has DSR role
     const dsr = await User.findById(dsrId);
     if (!dsr || dsr.role !== "dsr") {
-      return next(new ApiError(400, "Invalid DSR selected"));
+      return next(new ApiError(400, "Invalid DSR. User must have DSR role."));
+    }
+
+    // Check if DSR has a schedule for today
+    const todaySriLanka = getStartOfDaySriLanka(getSriLankaTime());
+    
+    let schedule = await DsrSchedule.findOne({
+      dsr: dsrId,
+      date: {
+        $gte: todaySriLanka,
+        $lt: getEndOfDaySriLanka(todaySriLanka)
+      }
+    });
+
+    // If no schedule exists for today, create one automatically
+    if (!schedule) {
+      const dayOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][todaySriLanka.getDay()];
+      
+      schedule = await DsrSchedule.create({
+        dsr: dsrId,
+        date: todaySriLanka,
+        dayOfWeek: dayOfWeek,
+        week: getWeekNumber(todaySriLanka),
+        month: todaySriLanka.getMonth() + 1,
+        year: todaySriLanka.getFullYear(),
+        scheduleType: 'WorkDay',
+        shifts: [
+          {
+            startTime: '08:00',
+            endTime: '17:00',
+            shiftName: 'Default Shift'
+          }
+        ],
+        createdBy: req.user._id,
+      });
+
+      logger.info(`Auto-created schedule for DSR ${dsr.email} on ${todaySriLanka.toISOString()}`);
+    }
+
+    // Check if schedule already has an assignment
+    if (schedule.assignment) {
+      return next(new ApiError(400, `DSR ${dsr.fullName} already has an assignment for today. Please return existing phones first.`));
     }
 
     // Validate all phones are available
     const phoneDetails = [];
     for (const phoneData of phones) {
+      const { imei, targetPrice } = phoneData;
+
+      // Find phone in inventory
       const invoice = await PurchaseInvoice.findOne({
-        "phones.imei": phoneData.imei,
-      }).populate("phones.product");
+        "phones.imei": imei,
+      });
 
       if (!invoice) {
-        return next(
-          new ApiError(404, `Phone with IMEI ${phoneData.imei} not found`)
-        );
+        return next(new ApiError(404, `Phone with IMEI ${imei} not found in inventory`));
       }
 
-      const phone = invoice.phones.find((p) => p.imei === phoneData.imei);
+      const phone = invoice.phones.find((p) => p.imei === imei);
 
       if (!phone) {
-        return next(
-          new ApiError(404, `Phone with IMEI ${phoneData.imei} not found in invoice`)
-        );
+        return next(new ApiError(404, `Phone with IMEI ${imei} not found`));
       }
 
-      // ✅ FIX: Check if product exists
-      if (!phone.product || !phone.product._id) {
-        return next(
-          new ApiError(500, `Product reference missing for IMEI ${phoneData.imei}. Please contact administrator.`)
-        );
-      }
-
+      // Check if phone is available (not already assigned)
       if (phone.status !== "Available") {
         return next(
           new ApiError(
             400,
-            `Phone ${phoneData.imei} is not available (Status: ${phone.status})`
+            `Phone with IMEI ${imei} is not available. Current status: ${phone.status}`
           )
         );
       }
 
-      phoneDetails.push({
-        invoice: invoice._id,
-        product: phone.product._id,
-        imei: phone.imei,
-        assignedPrice: phone.costPrice,
-        targetPrice: phoneData.targetPrice || phone.sellingPrice,
-        productName: phone.product.displayName,
-      });
-
-      // Update phone status to Assigned
+      // Update phone status to 'Assigned'
       phone.status = "Assigned";
       await invoice.save();
+
+      phoneDetails.push({
+        invoice: invoice._id,
+        product: phone.product,
+        imei: phone.imei,
+        assignedPrice: phone.costPrice,
+        targetPrice: targetPrice || phone.sellingPrice,
+        status: "Assigned",
+      });
     }
 
     // Create assignment
-    const now = new Date();
+    const now = getSriLankaTime();
     const assignment = await DsrAssignment.create({
       assignmentNumber: generateAssignmentNumber(),
       assignmentDate: now,
@@ -96,17 +133,24 @@ const createAssignment = async (req, res, next) => {
         .toString()
         .padStart(2, "0")}`,
       dsr: dsrId,
+      schedule: schedule._id, // Link to schedule
       phones: phoneDetails,
       notes,
       assignedBy: req.user._id,
     });
 
+    // Update schedule with assignment reference
+    schedule.assignment = assignment._id;
+    schedule.performance.phonesAssigned = phoneDetails.length;
+    await schedule.save();
+
     // Populate DSR details
     await assignment.populate("dsr", "firstName lastName email phone");
     await assignment.populate("phones.product");
+    await assignment.populate("schedule");
 
     logger.info(
-      `Assignment created by ${req.user.email}: ${assignment.assignmentNumber} for DSR ${dsr.email}`
+      `Assignment ${assignment.assignmentNumber} created and linked to schedule ${schedule._id} for DSR ${dsr.email}`
     );
 
     // Send Telegram notification if assigned by Clerk
@@ -115,21 +159,32 @@ const createAssignment = async (req, res, next) => {
         await telegramService.sendAssignmentNotification(assignment);
       } catch (error) {
         logger.error(`Failed to send Telegram notification: ${error.message}`);
-        // Don't fail the request if notification fails
       }
     }
 
     res.status(201).json({
       success: true,
-      message: "Phones assigned to DSR successfully",
+      message: "Phones assigned to DSR successfully and linked to today's schedule",
       data: {
         assignment: assignment.getSummary(),
+        schedule: schedule.getSummary(),
         details: assignment,
       },
     });
   } catch (error) {
     next(error);
   }
+};
+
+/**
+ * Helper: Get week number
+ */
+const getWeekNumber = (date) => {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
 };
 
 /**
@@ -228,14 +283,13 @@ const getAssignmentById = async (req, res, next) => {
 /**
  * Mark phone as sold
  * @route PATCH /api/v1/dsr-assignments/:id/phones/:imei/sold
- * @access Private (DSR only - their own assignments)
  */
 const markPhoneAsSold = async (req, res, next) => {
   try {
     const { id, imei } = req.params;
     const { soldPrice, soldDate } = req.body;
 
-    const assignment = await DsrAssignment.findById(id);
+    const assignment = await DsrAssignment.findById(id).populate('schedule');
 
     if (!assignment) {
       return next(new ApiError(404, "Assignment not found"));
@@ -246,24 +300,24 @@ const markPhoneAsSold = async (req, res, next) => {
       req.user.role === "dsr" &&
       assignment.dsr.toString() !== req.user._id.toString()
     ) {
-      return next(
-        new ApiError(403, "You can only update your own assignments")
-      );
+      return next(new ApiError(403, "You can only update your own assignments"));
     }
 
     const phone = assignment.phones.find((p) => p.imei === imei);
 
     if (!phone) {
-      return next(new ApiError(404, "Phone not found in this assignment"));
+      return next(new ApiError(404, `Phone with IMEI ${imei} not found in this assignment`));
     }
 
     if (phone.status !== "Assigned") {
-      return next(new ApiError(400, `Phone is already ${phone.status}`));
+      return next(
+        new ApiError(400, `Phone is already ${phone.status.toLowerCase()}. Cannot mark as sold.`)
+      );
     }
 
     // Update phone in assignment
     phone.status = "Sold";
-    phone.soldDate = soldDate || new Date();
+    phone.soldDate = soldDate || getSriLankaTime();
     phone.soldPrice = soldPrice;
 
     // Update phone in inventory
@@ -275,13 +329,34 @@ const markPhoneAsSold = async (req, res, next) => {
     await invoice.save();
     await assignment.save();
 
+    // Update schedule performance metrics
+    if (assignment.schedule) {
+      const schedule = await DsrSchedule.findById(assignment.schedule);
+      if (schedule) {
+        schedule.performance.phonesSold += 1;
+        schedule.performance.revenue += soldPrice;
+        schedule.performance.profit += (soldPrice - phone.assignedPrice);
+        await schedule.save();
+      }
+    }
+
     logger.info(
-      `Phone ${imei} marked as sold in assignment ${assignment.assignmentNumber}`
+      `Phone ${imei} marked as sold in assignment ${assignment.assignmentNumber} for Rs. ${soldPrice}`
     );
 
     res.status(200).json({
       success: true,
       message: "Phone marked as sold successfully",
+      data: {
+        phone: {
+          imei: phone.imei,
+          status: phone.status,
+          soldPrice: phone.soldPrice,
+          soldDate: phone.soldDate,
+          profit: soldPrice - phone.assignedPrice,
+        },
+        assignment: assignment.getSummary(),
+      },
     });
   } catch (error) {
     next(error);
@@ -291,13 +366,13 @@ const markPhoneAsSold = async (req, res, next) => {
 /**
  * Return phones (unsold)
  * @route PATCH /api/v1/dsr-assignments/:id/return
- * @access Private (DSR/Admin/Clerk)
  */
 const returnPhones = async (req, res, next) => {
   try {
+    const { id } = req.params;
     const { imeis, returnNotes } = req.body;
 
-    const assignment = await DsrAssignment.findById(req.params.id);
+    const assignment = await DsrAssignment.findById(id).populate('schedule');
 
     if (!assignment) {
       return next(new ApiError(404, "Assignment not found"));
@@ -308,37 +383,50 @@ const returnPhones = async (req, res, next) => {
       req.user.role === "dsr" &&
       assignment.dsr.toString() !== req.user._id.toString()
     ) {
-      return next(
-        new ApiError(403, "You can only return your own assignments")
-      );
+      return next(new ApiError(403, "You can only return your own assignments"));
     }
 
-    const now = new Date();
-    let returnedCount = 0;
+    if (!assignment.canReturn()) {
+      return next(new ApiError(400, "No phones available to return in this assignment"));
+    }
 
+    const returnedPhones = [];
+    const now = getSriLankaTime();
+
+    // Process each IMEI
     for (const imei of imeis) {
       const phone = assignment.phones.find((p) => p.imei === imei);
 
-      if (!phone) continue;
-
-      if (phone.status !== "Assigned") {
-        continue; // Skip already sold/returned phones
+      if (!phone) {
+        logger.warn(`IMEI ${imei} not found in assignment ${assignment.assignmentNumber}`);
+        continue;
       }
 
-      // Update phone in assignment
+      if (phone.status === "Sold") {
+        logger.warn(`Cannot return sold phone: ${imei}`);
+        continue;
+      }
+
+      if (phone.status === "Returned") {
+        logger.warn(`Phone ${imei} already returned`);
+        continue;
+      }
+
+      // Update phone status
       phone.status = "Returned";
       phone.returnedDate = now;
       phone.returnNotes = returnNotes;
 
-      // Update phone in inventory
+      // Update inventory
       const invoice = await PurchaseInvoice.findOne({ "phones.imei": imei });
       const inventoryPhone = invoice.phones.find((p) => p.imei === imei);
-      inventoryPhone.status = "Available"; // Back to available
-
+      inventoryPhone.status = "Available";
       await invoice.save();
-      returnedCount++;
+
+      returnedPhones.push(phone);
     }
 
+    // Update assignment status
     assignment.returnDate = now;
     assignment.returnTime = `${now.getHours().toString().padStart(2, "0")}:${now
       .getMinutes()
@@ -349,14 +437,27 @@ const returnPhones = async (req, res, next) => {
 
     await assignment.save();
 
+    // Update schedule performance metrics
+    if (assignment.schedule) {
+      const schedule = await DsrSchedule.findById(assignment.schedule);
+      if (schedule) {
+        schedule.performance.phonesReturned += returnedPhones.length;
+        await schedule.save();
+      }
+    }
+
     logger.info(
-      `${returnedCount} phones returned from assignment ${assignment.assignmentNumber}`
+      `${returnedPhones.length} phones returned from assignment ${assignment.assignmentNumber}`
     );
 
     res.status(200).json({
       success: true,
-      message: `${returnedCount} phones returned successfully`,
+      message: `${returnedPhones.length} phone(s) returned successfully`,
       data: {
+        returnedPhones: returnedPhones.map((p) => ({
+          imei: p.imei,
+          returnedDate: p.returnedDate,
+        })),
         assignment: assignment.getSummary(),
       },
     });

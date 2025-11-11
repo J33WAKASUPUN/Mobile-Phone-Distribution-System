@@ -118,6 +118,10 @@ app.use(`/api/${API_VERSION}/inventory`, inventoryRoutes);
 const dsrAssignmentRoutes = require('./routes/dsrAssignment.routes');
 app.use(`/api/${API_VERSION}/dsr-assignments`, dsrAssignmentRoutes);
 
+// DSR Schedule Management routes
+const dsrScheduleRoutes = require('./routes/dsrSchedule.routes');
+app.use(`/api/${API_VERSION}/dsr-schedules`, dsrScheduleRoutes);
+
 // ============================================
 // ERROR HANDLING
 // ============================================

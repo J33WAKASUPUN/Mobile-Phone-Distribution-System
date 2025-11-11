@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 /**
  * Purchase Invoice Schema
@@ -9,7 +9,7 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     // Invoice Details
     invoiceNumber: {
       type: String,
-      required: [true, 'Invoice number is required'],
+      required: [true, "Invoice number is required"],
       unique: true,
       trim: true,
       uppercase: true,
@@ -17,7 +17,7 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     },
     invoiceDate: {
       type: Date,
-      required: [true, 'Invoice date is required'],
+      required: [true, "Invoice date is required"],
       index: true,
     },
     invoiceTime: {
@@ -29,7 +29,7 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     supplier: {
       name: {
         type: String,
-        required: [true, 'Supplier name is required'],
+        required: [true, "Supplier name is required"],
         trim: true,
       },
       contactPerson: String,
@@ -59,48 +59,56 @@ const purchaseInvoiceSchema = new mongoose.Schema(
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: 'Product',
+          ref: "Product",
           required: true,
         },
         imei: {
           type: String,
-          required: [true, 'IMEI number is required'],
+          required: [true, "IMEI number is required"],
           unique: true,
           trim: true,
-          match: [/^[0-9]{15}$/, 'IMEI must be exactly 15 digits'],
+          match: [/^[0-9]{15}$/, "IMEI must be exactly 15 digits"],
           index: true,
         },
         serialNumber: String,
-        
+
         costPrice: {
           type: Number,
-          required: [true, 'Cost price is required'],
+          required: [true, "Cost price is required"],
           min: 0,
         },
         sellingPrice: {
           type: Number,
-          required: [true, 'Selling price is required'],
+          required: [true, "Selling price is required"],
           min: 0,
         },
-        
+
         condition: {
           type: String,
-          enum: ['New', 'Refurbished', 'Open Box', 'Like New'],
-          default: 'New',
+          enum: ["New", "Refurbished", "Open Box", "Like New"],
+          default: "New",
         },
-        
+
         status: {
           type: String,
-          enum: ['Available', 'Assigned', 'Reserved', 'Sold', 'Returned', 'Damaged', 'Transit'],
-          default: 'Available',
+          enum: [
+            "Available",
+            "Assigned",
+            "Reserved",
+            "Sold",
+            "Returned",
+            "Damaged",
+            "Transit",
+          ],
+          default: "Available",
           index: true,
         },
-        
+
         warrantyExpiryDate: Date,
         notes: String,
         soldDate: Date,
         soldTo: String,
-        
+
         addedAt: {
           type: Date,
           default: Date.now,
@@ -154,13 +162,13 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     payment: {
       method: {
         type: String,
-        enum: ['Cash', 'Bank Transfer', 'Cheque', 'Credit', 'Mixed'],
-        default: 'Cash',
+        enum: ["Cash", "Bank Transfer", "Cheque", "Credit", "Mixed"],
+        default: "Cash",
       },
       status: {
         type: String,
-        enum: ['Paid', 'Partial', 'Pending', 'Overdue'],
-        default: 'Paid',
+        enum: ["Paid", "Partial", "Pending", "Overdue"],
+        default: "Paid",
       },
       paidAmount: {
         type: Number,
@@ -177,8 +185,8 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     // Status
     invoiceStatus: {
       type: String,
-      enum: ['Draft', 'Verified', 'Completed', 'Cancelled'],
-      default: 'Draft',
+      enum: ["Draft", "Verified", "Completed", "Cancelled"],
+      default: "Draft",
       index: true,
     },
 
@@ -189,19 +197,19 @@ const purchaseInvoiceSchema = new mongoose.Schema(
     // Verification
     verifiedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     verifiedAt: Date,
 
     // Audit Trail
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
   },
   {
@@ -215,28 +223,28 @@ const purchaseInvoiceSchema = new mongoose.Schema(
 // INDEXES
 // ============================================
 purchaseInvoiceSchema.index({ invoiceDate: -1 });
-purchaseInvoiceSchema.index({ 'supplier.name': 1 });
+purchaseInvoiceSchema.index({ "supplier.name": 1 });
 purchaseInvoiceSchema.index({ invoiceStatus: 1 });
-purchaseInvoiceSchema.index({ 'phones.imei': 1 });
-purchaseInvoiceSchema.index({ 'phones.status': 1 });
+purchaseInvoiceSchema.index({ "phones.imei": 1 });
+purchaseInvoiceSchema.index({ "phones.status": 1 });
 
 // ============================================
 // VIRTUALS
 // ============================================
 
-purchaseInvoiceSchema.virtual('totalPhones').get(function () {
+purchaseInvoiceSchema.virtual("totalPhones").get(function () {
   return this.phones.length;
 });
 
-purchaseInvoiceSchema.virtual('availablePhones').get(function () {
-  return this.phones.filter(phone => phone.status === 'Available').length;
+purchaseInvoiceSchema.virtual("availablePhones").get(function () {
+  return this.phones.filter((phone) => phone.status === "Available").length;
 });
 
-purchaseInvoiceSchema.virtual('soldPhones').get(function () {
-  return this.phones.filter(phone => phone.status === 'Sold').length;
+purchaseInvoiceSchema.virtual("soldPhones").get(function () {
+  return this.phones.filter((phone) => phone.status === "Sold").length;
 });
 
-purchaseInvoiceSchema.virtual('expectedProfit').get(function () {
+purchaseInvoiceSchema.virtual("expectedProfit").get(function () {
   return this.financials.totalSellingPrice - this.financials.totalCost;
 });
 
@@ -244,19 +252,26 @@ purchaseInvoiceSchema.virtual('expectedProfit').get(function () {
 // MIDDLEWARE
 // ============================================
 
-purchaseInvoiceSchema.pre('save', function (next) {
-  this.financials.subtotal = this.phones.reduce((sum, phone) => sum + phone.costPrice, 0);
-  
-  this.financials.totalCost = 
-    this.financials.subtotal + 
-    this.financials.tax.amount + 
-    this.financials.shippingCost - 
+purchaseInvoiceSchema.pre("save", function (next) {
+  this.financials.subtotal = this.phones.reduce(
+    (sum, phone) => sum + phone.costPrice,
+    0
+  );
+
+  this.financials.totalCost =
+    this.financials.subtotal +
+    this.financials.tax.amount +
+    this.financials.shippingCost -
     this.financials.discount.amount;
-  
-  this.financials.totalSellingPrice = this.phones.reduce((sum, phone) => sum + phone.sellingPrice, 0);
-  
-  this.payment.pendingAmount = this.financials.totalCost - this.payment.paidAmount;
-  
+
+  this.financials.totalSellingPrice = this.phones.reduce(
+    (sum, phone) => sum + phone.sellingPrice,
+    0
+  );
+
+  this.payment.pendingAmount =
+    this.financials.totalCost - this.payment.paidAmount;
+
   next();
 });
 
@@ -265,45 +280,53 @@ purchaseInvoiceSchema.pre('save', function (next) {
 // ============================================
 
 purchaseInvoiceSchema.methods.hasIMEI = function (imei) {
-  return this.phones.some(phone => phone.imei === imei);
+  return this.phones.some((phone) => phone.imei === imei);
 };
 
 purchaseInvoiceSchema.methods.getPhoneByIMEI = function (imei) {
-  return this.phones.find(phone => phone.imei === imei);
+  return this.phones.find((phone) => phone.imei === imei);
 };
 
-purchaseInvoiceSchema.methods.updatePhoneStatus = async function (imei, newStatus, soldInfo = {}) {
+purchaseInvoiceSchema.methods.updatePhoneStatus = async function (
+  imei,
+  newStatus,
+  soldInfo = {}
+) {
   const phone = this.getPhoneByIMEI(imei);
-  
+
   if (!phone) {
-    throw new Error('Phone with this IMEI not found in invoice');
+    throw new Error("Phone with this IMEI not found in invoice");
   }
-  
+
   phone.status = newStatus;
-  
-  if (newStatus === 'Sold' && soldInfo) {
+
+  if (newStatus === "Sold" && soldInfo) {
     phone.soldDate = soldInfo.soldDate || new Date();
-    phone.soldTo = soldInfo.soldTo || '';
+    phone.soldTo = soldInfo.soldTo || "";
   }
-  
+
   await this.save();
   return phone;
 };
 
 purchaseInvoiceSchema.methods.getSummary = function () {
   return {
-    id: this._id,
+    id: this._id.toString(),
     invoiceNumber: this.invoiceNumber,
     invoiceDate: this.invoiceDate,
-    supplier: this.supplier.name,
-    totalPhones: this.totalPhones,
-    availablePhones: this.availablePhones,
-    soldPhones: this.soldPhones,
+    supplier:
+      typeof this.supplier === "object" && this.supplier !== null
+        ? this.supplier.name
+        : this.supplier || "Unknown",
+    totalPhones: this.phones.length,
+    availablePhones: this.phones.filter((p) => p.status === "Available").length,
+    soldPhones: this.phones.filter((p) => p.status === "Sold").length,
     totalCost: this.financials.totalCost,
     totalSellingPrice: this.financials.totalSellingPrice,
-    expectedProfit: this.expectedProfit,
+    expectedProfit:
+      this.financials.totalSellingPrice - this.financials.totalCost,
     invoiceStatus: this.invoiceStatus,
-    paymentStatus: this.payment.status,
+    paymentStatus: this.payment?.status || "Pending",
   };
 };
 
@@ -312,4 +335,6 @@ purchaseInvoiceSchema.methods.getSummary = function () {
 // ============================================
 
 // Check if model exists before creating it
-module.exports = mongoose.models.PurchaseInvoice || mongoose.model('PurchaseInvoice', purchaseInvoiceSchema);
+module.exports =
+  mongoose.models.PurchaseInvoice ||
+  mongoose.model("PurchaseInvoice", purchaseInvoiceSchema);

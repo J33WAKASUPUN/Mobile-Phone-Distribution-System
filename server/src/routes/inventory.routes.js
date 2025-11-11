@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require("express");
 const {
   createProduct,
   getAllProducts,
@@ -15,22 +15,26 @@ const {
   getStatistics,
   updatePhoneStatus,
   exportInventoryToExcel,
-} = require('../controllers/inventoryController');
-const { protect, authorize } = require('../middlewares/auth');
-const validate = require('../middlewares/validate');
+  getAllPhones,
+  getPhoneByIMEI,
+  updatePhone,
+  deletePhone,
+} = require("../controllers/inventoryController");
+const { protect, authorize } = require("../middlewares/auth");
+const validate = require("../middlewares/validate");
 const {
   createProductSchema,
   updateProductSchema,
   createPurchaseInvoiceSchema,
   updatePhoneStatusSchema,
-} = require('../validations/schemas/inventorySchemas');
-const upload = require('../middlewares/upload');
+} = require("../validations/schemas/inventorySchemas");
+const upload = require("../middlewares/upload");
 const {
   downloadProductTemplate,
   downloadInvoiceTemplate,
   importProducts,
   importInvoices,
-} = require('../controllers/importController');
+} = require("../controllers/importController");
 const router = express.Router();
 
 // ============================================
@@ -43,9 +47,9 @@ const router = express.Router();
  * @access  Private (Owner only)
  */
 router.post(
-  '/products',
+  "/products",
   protect,
-  authorize('owner'),
+  authorize("owner"),
   validate(createProductSchema),
   createProduct
 );
@@ -55,14 +59,14 @@ router.post(
  * @desc    Get all products
  * @access  Private (All authenticated users)
  */
-router.get('/products', protect, getAllProducts);
+router.get("/products", protect, getAllProducts);
 
 /**
  * @route   GET /api/v1/inventory/products/:id
  * @desc    Get product by ID
  * @access  Private (All authenticated users)
  */
-router.get('/products/:id', protect, getProductById);
+router.get("/products/:id", protect, getProductById);
 
 /**
  * @route   PUT /api/v1/inventory/products/:id
@@ -70,9 +74,9 @@ router.get('/products/:id', protect, getProductById);
  * @access  Private (Owner only)
  */
 router.put(
-  '/products/:id',
+  "/products/:id",
   protect,
-  authorize('owner'),
+  authorize("owner"),
   validate(updateProductSchema),
   updateProduct
 );
@@ -82,7 +86,7 @@ router.put(
  * @desc    Delete product (soft delete)
  * @access  Private (Owner only)
  */
-router.delete('/products/:id', protect, authorize('owner'), deleteProduct);
+router.delete("/products/:id", protect, authorize("owner"), deleteProduct);
 
 // ============================================
 // PURCHASE INVOICE ROUTES (Owner only can create)
@@ -94,9 +98,9 @@ router.delete('/products/:id', protect, authorize('owner'), deleteProduct);
  * @access  Private (Owner only)
  */
 router.post(
-  '/invoices',
+  "/invoices",
   protect,
-  authorize('owner'),
+  authorize("owner"),
   validate(createPurchaseInvoiceSchema),
   createPurchaseInvoice
 );
@@ -106,21 +110,21 @@ router.post(
  * @desc    Get all purchase invoices
  * @access  Private (All authenticated users)
  */
-router.get('/invoices', protect, getAllInvoices);
+router.get("/invoices", protect, getAllInvoices);
 
 /**
  * @route   GET /api/v1/inventory/invoices/:id
  * @desc    Get invoice by ID
  * @access  Private (All authenticated users)
  */
-router.get('/invoices/:id', protect, getInvoiceById);
+router.get("/invoices/:id", protect, getInvoiceById);
 
 /**
  * @route   PUT /api/v1/inventory/invoices/:id
  * @desc    Update invoice
  * @access  Private (Owner only)
  */
-router.put('/invoices/:id', protect, authorize('owner'), updateInvoice);
+router.put("/invoices/:id", protect, authorize("owner"), updateInvoice);
 
 /**
  * @route   POST /api/v1/inventory/invoices/:id/upload-proof
@@ -128,10 +132,10 @@ router.put('/invoices/:id', protect, authorize('owner'), updateInvoice);
  * @access  Private (Owner only)
  */
 router.post(
-  '/invoices/:id/upload-proof',
+  "/invoices/:id/upload-proof",
   protect,
-  authorize('owner'),
-  upload.single('invoiceProof'),
+  authorize("owner"),
+  upload.single("invoiceProof"),
   uploadInvoiceProof
 );
 
@@ -144,21 +148,21 @@ router.post(
  * @desc    Search phone by IMEI
  * @access  Private (All authenticated users)
  */
-router.get('/search/imei/:imei', protect, searchByIMEI);
+router.get("/search/imei/:imei", protect, searchByIMEI);
 
 /**
  * @route   GET /api/v1/inventory/stock/available
  * @desc    Get available stock summary
  * @access  Private (All authenticated users)
  */
-router.get('/stock/available', protect, getAvailableStock);
+router.get("/stock/available", protect, getAvailableStock);
 
 /**
  * @route   GET /api/v1/inventory/statistics
  * @desc    Get inventory statistics
  * @access  Private (All authenticated users)
  */
-router.get('/statistics', protect, getStatistics);
+router.get("/statistics", protect, getStatistics);
 
 /**
  * @route   PATCH /api/v1/inventory/phones/:imei/status
@@ -166,12 +170,40 @@ router.get('/statistics', protect, getStatistics);
  * @access  Private (Owner only)
  */
 router.patch(
-  '/phones/:imei/status',
+  "/phones/:imei/status",
   protect,
-  authorize('owner'),
+  authorize("owner"),
   validate(updatePhoneStatusSchema),
   updatePhoneStatus
 );
+
+/**
+ * @route   GET /api/v1/inventory/phones
+ * @desc    Get all individual phones with filtering
+ * @access  Private (Owner, Clerk)
+ */
+router.get("/phones", protect, authorize("owner", "clerk"), getAllPhones);
+
+/**
+ * @route   GET /api/v1/inventory/phones/:imei
+ * @desc    Get phone details by IMEI
+ * @access  Private (All authenticated)
+ */
+router.get("/phones/:imei", protect, getPhoneByIMEI);
+
+/**
+ * @route   PATCH /api/v1/inventory/phones/:imei
+ * @desc    Update phone details
+ * @access  Private (Owner only)
+ */
+router.patch("/phones/:imei", protect, authorize("owner"), updatePhone);
+
+/**
+ * @route   DELETE /api/v1/inventory/phones/:imei
+ * @desc    Delete phone by IMEI
+ * @access  Private (Owner only)
+ */
+router.delete("/phones/:imei", protect, authorize("owner"), deletePhone);
 
 // ============================================
 // IMPORT ROUTES (Add before module.exports)
@@ -182,14 +214,24 @@ router.patch(
  * @desc    Download product import template
  * @access  Private (Owner only)
  */
-router.get('/import/templates/products', protect, authorize('owner'), downloadProductTemplate);
+router.get(
+  "/import/templates/products",
+  protect,
+  authorize("owner"),
+  downloadProductTemplate
+);
 
 /**
  * @route   GET /api/v1/inventory/import/templates/invoices
  * @desc    Download invoice import template
  * @access  Private (Owner only)
  */
-router.get('/import/templates/invoices', protect, authorize('owner'), downloadInvoiceTemplate);
+router.get(
+  "/import/templates/invoices",
+  protect,
+  authorize("owner"),
+  downloadInvoiceTemplate
+);
 
 /**
  * @route   POST /api/v1/inventory/import/products
@@ -197,10 +239,10 @@ router.get('/import/templates/invoices', protect, authorize('owner'), downloadIn
  * @access  Private (Owner only)
  */
 router.post(
-  '/import/products',
+  "/import/products",
   protect,
-  authorize('owner'),
-  upload.single('file'),
+  authorize("owner"),
+  upload.single("file"),
   importProducts
 );
 
@@ -210,10 +252,10 @@ router.post(
  * @access  Private (Owner only)
  */
 router.post(
-  '/import/invoices',
+  "/import/invoices",
   protect,
-  authorize('owner'),
-  upload.single('file'),
+  authorize("owner"),
+  upload.single("file"),
   importInvoices
 );
 
@@ -226,6 +268,6 @@ router.post(
  * @desc    Export inventory to Excel
  * @access  Private (All authenticated users)
  */
-router.get('/export/excel', protect, exportInventoryToExcel);
+router.get("/export/excel", protect, exportInventoryToExcel);
 
 module.exports = router;

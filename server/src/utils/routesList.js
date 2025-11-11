@@ -89,8 +89,9 @@ const displayRoutesTable = (routes) => {
     'User Management': [],
     'Inventory & Products': [],
     'Purchase Invoices': [],
-    'DSR Assignments': [], // ✅ NEW
-    'Import/Export': [], // ✅ NEW
+    'DSR Assignments': [],
+    'DSR Schedule Management': [],
+    'Import/Export': [],
     'Testing': [],
     'Other': [],
   };
@@ -102,10 +103,12 @@ const displayRoutesTable = (routes) => {
       categorized['Authentication'].push(route);
     } else if (route.path.includes('/users')) {
       categorized['User Management'].push(route);
+    } else if (route.path.includes('/dsr-schedules')) {
+      categorized['DSR Schedule Management'].push(route);
     } else if (route.path.includes('/dsr-assignments')) {
-      categorized['DSR Assignments'].push(route); // ✅ NEW
+      categorized['DSR Assignments'].push(route);
     } else if (route.path.includes('/import') || route.path.includes('/export')) {
-      categorized['Import/Export'].push(route); // ✅ NEW
+      categorized['Import/Export'].push(route);
     } else if (route.path.includes('/inventory/products') || route.path.includes('/inventory/stock') || route.path.includes('/inventory/search') || route.path.includes('/inventory/statistics')) {
       categorized['Inventory & Products'].push(route);
     } else if (route.path.includes('/inventory/invoices') || route.path.includes('/inventory/phones')) {
@@ -140,7 +143,6 @@ const displayRoutesTable = (routes) => {
   return output;
 };
 
-//EXPORT AT THE END (After all functions are declared)
 module.exports = {
   getRegisteredRoutes,
   getRouteSummary,

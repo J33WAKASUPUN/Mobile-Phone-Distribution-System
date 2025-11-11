@@ -25,6 +25,12 @@ const dsrAssignmentSchema = new mongoose.Schema(
       required: true,
     },
 
+    schedule: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'DsrSchedule',
+      index: true,
+    },
+
     // DSR Information
     dsr: {
       type: mongoose.Schema.Types.ObjectId,

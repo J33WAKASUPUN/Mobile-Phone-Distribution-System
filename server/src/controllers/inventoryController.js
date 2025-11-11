@@ -1,10 +1,10 @@
-const Product = require('../models/Product');
-const PurchaseInvoice = require('../models/PurchaseInvoice');
-const InventoryService = require('../services/inventoryService');
-const { ApiError } = require('../middlewares/errorHandler');
-const logger = require('../utils/logger');
-const s3Service = require('../config/aws');
-const ExcelJS = require('exceljs');
+const Product = require("../models/Product");
+const PurchaseInvoice = require("../models/PurchaseInvoice");
+const InventoryService = require("../services/inventoryService");
+const { ApiError } = require("../middlewares/errorHandler");
+const logger = require("../utils/logger");
+const s3Service = require("../config/aws");
+const ExcelJS = require("exceljs");
 
 /**
  * Create new product (Owner only)
@@ -21,7 +21,7 @@ const createProduct = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: 'Product created successfully',
+      message: "Product created successfully",
       data: { product },
     });
   } catch (error) {
@@ -35,22 +35,16 @@ const createProduct = async (req, res, next) => {
  */
 const getAllProducts = async (req, res, next) => {
   try {
-    const {
-      page = 1,
-      limit = 20,
-      brand,
-      search,
-      isActive,
-    } = req.query;
+    const { page = 1, limit = 20, brand, search, isActive } = req.query;
 
     const filter = {};
 
     if (brand) filter.brand = brand.toUpperCase();
-    if (isActive !== undefined) filter.isActive = isActive === 'true';
+    if (isActive !== undefined) filter.isActive = isActive === "true";
     if (search) {
       filter.$or = [
-        { brand: { $regex: search, $options: 'i' } },
-        { model: { $regex: search, $options: 'i' } },
+        { brand: { $regex: search, $options: "i" } },
+        { model: { $regex: search, $options: "i" } },
       ];
     }
 
@@ -86,19 +80,30 @@ const getAllProducts = async (req, res, next) => {
  */
 const createPurchaseInvoice = async (req, res, next) => {
   try {
-    const { invoiceNumber, invoiceDate, invoiceTime, supplier, phones, financials, payment, notes } = req.body;
+    const {
+      invoiceNumber,
+      invoiceDate,
+      invoiceTime,
+      supplier,
+      phones,
+      financials,
+      payment,
+      notes,
+    } = req.body;
 
     // Check for duplicate invoice number
     const existingInvoice = await PurchaseInvoice.findOne({ invoiceNumber });
     if (existingInvoice) {
-      return next(new ApiError(400, 'Invoice number already exists'));
+      return next(new ApiError(400, "Invoice number already exists"));
     }
 
     // Check for duplicate IMEIs
     for (const phone of phones) {
       const isDuplicate = await InventoryService.isIMEIDuplicate(phone.imei);
       if (isDuplicate) {
-        return next(new ApiError(400, `IMEI ${phone.imei} already exists in inventory`));
+        return next(
+          new ApiError(400, `IMEI ${phone.imei} already exists in inventory`)
+        );
       }
     }
 
@@ -116,11 +121,13 @@ const createPurchaseInvoice = async (req, res, next) => {
       createdBy: req.user._id,
     });
 
-    logger.info(`Purchase invoice created by ${req.user.email}: ${invoiceNumber} with ${phones.length} phones`);
+    logger.info(
+      `Purchase invoice created by ${req.user.email}: ${invoiceNumber} with ${phones.length} phones`
+    );
 
     res.status(201).json({
       success: true,
-      message: 'Purchase invoice created successfully',
+      message: "Purchase invoice created successfully",
       data: { invoice: invoice.getSummary() },
     });
   } catch (error) {
@@ -146,7 +153,7 @@ const getAllInvoices = async (req, res, next) => {
     const filter = {};
 
     if (status) filter.invoiceStatus = status;
-    if (supplier) filter['supplier.name'] = { $regex: supplier, $options: 'i' };
+    if (supplier) filter["supplier.name"] = { $regex: supplier, $options: "i" };
     if (startDate || endDate) {
       filter.invoiceDate = {};
       if (startDate) filter.invoiceDate.$gte = new Date(startDate);
@@ -156,7 +163,7 @@ const getAllInvoices = async (req, res, next) => {
     const skip = (page - 1) * limit;
 
     const invoices = await PurchaseInvoice.find(filter)
-      .populate('phones.product')
+      .populate("phones.product")
       .limit(parseInt(limit))
       .skip(skip)
       .sort({ invoiceDate: -1 });
@@ -166,7 +173,7 @@ const getAllInvoices = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        invoices: invoices.map(inv => inv.getSummary()),
+        invoices: invoices.map((inv) => inv.getSummary()),
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limit),
@@ -187,17 +194,20 @@ const getAllInvoices = async (req, res, next) => {
 const getInvoiceById = async (req, res, next) => {
   try {
     const invoice = await PurchaseInvoice.findById(req.params.id)
-      .populate('phones.product')
-      .populate('createdBy', 'firstName lastName email')
-      .populate('verifiedBy', 'firstName lastName email');
+      .populate("phones.product") // ✅ ADD: Populate product details
+      .populate("createdBy", "email firstName lastName")
+      .populate("verifiedBy", "email firstName lastName");
 
     if (!invoice) {
-      return next(new ApiError(404, 'Invoice not found'));
+      return next(new ApiError(404, "Invoice not found"));
     }
 
     res.status(200).json({
       success: true,
-      data: { invoice },
+      message: "Invoice retrieved successfully",
+      data: {
+        invoice,
+      },
     });
   } catch (error) {
     next(error);
@@ -229,16 +239,16 @@ const searchByIMEI = async (req, res, next) => {
  */
 const getAvailableStock = async (req, res, next) => {
   try {
-    const { view = 'grouped' } = req.query; // Support 'grouped' or 'detailed' view
+    const { view = "grouped" } = req.query; // Support 'grouped' or 'detailed' view
 
-    if (view === 'detailed') {
+    if (view === "detailed") {
       // Return flat list of all available phones
       const stock = await InventoryService.getAvailableStockDetailed();
 
       return res.status(200).json({
         success: true,
         data: {
-          view: 'detailed',
+          view: "detailed",
           totalPhones: stock.length,
           phones: stock,
         },
@@ -250,12 +260,15 @@ const getAvailableStock = async (req, res, next) => {
 
     const totalPhones = stock.reduce((sum, item) => sum + item.count, 0);
     const totalValue = stock.reduce((sum, item) => sum + item.totalCost, 0);
-    const totalRevenue = stock.reduce((sum, item) => sum + item.totalSellingPrice, 0);
+    const totalRevenue = stock.reduce(
+      (sum, item) => sum + item.totalSellingPrice,
+      0
+    );
 
     res.status(200).json({
       success: true,
       data: {
-        view: 'grouped',
+        view: "grouped",
         summary: {
           totalProducts: stock.length,
           totalPhones: totalPhones,
@@ -297,7 +310,7 @@ const getProductById = async (req, res, next) => {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return next(new ApiError(404, 'Product not found'));
+      return next(new ApiError(404, "Product not found"));
     }
 
     res.status(200).json({
@@ -328,14 +341,14 @@ const updateProduct = async (req, res, next) => {
     );
 
     if (!product) {
-      return next(new ApiError(404, 'Product not found'));
+      return next(new ApiError(404, "Product not found"));
     }
 
     logger.info(`Product updated by ${req.user.email}: ${product.displayName}`);
 
     res.status(200).json({
       success: true,
-      message: 'Product updated successfully',
+      message: "Product updated successfully",
       data: { product },
     });
   } catch (error) {
@@ -360,14 +373,14 @@ const deleteProduct = async (req, res, next) => {
     );
 
     if (!product) {
-      return next(new ApiError(404, 'Product not found'));
+      return next(new ApiError(404, "Product not found"));
     }
 
     logger.info(`Product deleted by ${req.user.email}: ${product.displayName}`);
 
     res.status(200).json({
       success: true,
-      message: 'Product deleted successfully',
+      message: "Product deleted successfully",
     });
   } catch (error) {
     next(error);
@@ -393,14 +406,16 @@ const updateInvoice = async (req, res, next) => {
     );
 
     if (!invoice) {
-      return next(new ApiError(404, 'Invoice not found'));
+      return next(new ApiError(404, "Invoice not found"));
     }
 
-    logger.info(`Invoice updated by ${req.user.email}: ${invoice.invoiceNumber}`);
+    logger.info(
+      `Invoice updated by ${req.user.email}: ${invoice.invoiceNumber}`
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Invoice updated successfully',
+      message: "Invoice updated successfully",
       data: { invoice: invoice.getSummary() },
     });
   } catch (error) {
@@ -415,13 +430,13 @@ const updateInvoice = async (req, res, next) => {
 const uploadInvoiceProof = async (req, res, next) => {
   try {
     if (!req.file) {
-      return next(new ApiError(400, 'Please upload an invoice proof image'));
+      return next(new ApiError(400, "Please upload an invoice proof image"));
     }
 
     const invoice = await PurchaseInvoice.findById(req.params.id);
 
     if (!invoice) {
-      return next(new ApiError(404, 'Invoice not found'));
+      return next(new ApiError(404, "Invoice not found"));
     }
 
     // Upload to S3
@@ -429,7 +444,7 @@ const uploadInvoiceProof = async (req, res, next) => {
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype,
-      'invoices'
+      "invoices"
     );
 
     // Update invoice with proof details
@@ -442,11 +457,13 @@ const uploadInvoiceProof = async (req, res, next) => {
 
     await invoice.save();
 
-    logger.info(`Invoice proof uploaded for ${invoice.invoiceNumber} by ${req.user.email}`);
+    logger.info(
+      `Invoice proof uploaded for ${invoice.invoiceNumber} by ${req.user.email}`
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Invoice proof uploaded successfully',
+      message: "Invoice proof uploaded successfully",
       data: {
         invoiceProof: invoice.invoiceProof,
       },
@@ -466,20 +483,22 @@ const updatePhoneStatus = async (req, res, next) => {
     const { status, soldDate, soldTo } = req.body;
 
     const invoice = await PurchaseInvoice.findOne({
-      'phones.imei': imei,
+      "phones.imei": imei,
     });
 
     if (!invoice) {
-      return next(new ApiError(404, 'Phone with this IMEI not found'));
+      return next(new ApiError(404, "Phone with this IMEI not found"));
     }
 
     await invoice.updatePhoneStatus(imei, status, { soldDate, soldTo });
 
-    logger.info(`Phone ${imei} status updated to ${status} by ${req.user.email}`);
+    logger.info(
+      `Phone ${imei} status updated to ${status} by ${req.user.email}`
+    );
 
     res.status(200).json({
       success: true,
-      message: 'Phone status updated successfully',
+      message: "Phone status updated successfully",
     });
   } catch (error) {
     next(error);
@@ -497,29 +516,29 @@ const exportInventoryToExcel = async (req, res, next) => {
 
     // Create workbook
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Inventory');
+    const worksheet = workbook.addWorksheet("Inventory");
 
     // Define columns
     worksheet.columns = [
-      { header: 'Brand', key: 'brand', width: 15 },
-      { header: 'Model', key: 'model', width: 25 },
-      { header: 'Storage', key: 'storage', width: 10 },
-      { header: 'RAM', key: 'ram', width: 10 },
-      { header: 'Color', key: 'color', width: 15 },
-      { header: 'Available Quantity', key: 'count', width: 18 },
-      { header: 'Total Cost', key: 'totalCost', width: 15 },
-      { header: 'Total Selling Price', key: 'totalSellingPrice', width: 18 },
-      { header: 'Expected Profit', key: 'expectedProfit', width: 15 },
+      { header: "Brand", key: "brand", width: 15 },
+      { header: "Model", key: "model", width: 25 },
+      { header: "Storage", key: "storage", width: 10 },
+      { header: "RAM", key: "ram", width: 10 },
+      { header: "Color", key: "color", width: 15 },
+      { header: "Available Quantity", key: "count", width: 18 },
+      { header: "Total Cost", key: "totalCost", width: 15 },
+      { header: "Total Selling Price", key: "totalSellingPrice", width: 18 },
+      { header: "Expected Profit", key: "expectedProfit", width: 15 },
     ];
 
     // Style header row
     worksheet.getRow(1).font = { bold: true };
     worksheet.getRow(1).fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF4472C4' },
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF4472C4" },
     };
-    worksheet.getRow(1).font = { color: { argb: 'FFFFFFFF' }, bold: true };
+    worksheet.getRow(1).font = { color: { argb: "FFFFFFFF" }, bold: true };
 
     // Add data rows
     stock.forEach((item) => {
@@ -537,7 +556,7 @@ const exportInventoryToExcel = async (req, res, next) => {
     });
 
     // Format currency columns
-    ['totalCost', 'totalSellingPrice', 'expectedProfit'].forEach((col) => {
+    ["totalCost", "totalSellingPrice", "expectedProfit"].forEach((col) => {
       worksheet.getColumn(col).numFmt = '"Rs. "#,##0.00';
     });
 
@@ -545,23 +564,23 @@ const exportInventoryToExcel = async (req, res, next) => {
     worksheet.eachRow((row) => {
       row.eachCell((cell) => {
         cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' },
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
         };
       });
     });
 
     // Generate filename
-    const filename = `inventory_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const filename = `inventory_${new Date().toISOString().split("T")[0]}.xlsx`;
 
     // Set response headers
     res.setHeader(
-      'Content-Type',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
 
     // Write to response
     await workbook.xlsx.write(res);
@@ -574,6 +593,332 @@ const exportInventoryToExcel = async (req, res, next) => {
   }
 };
 
+/**
+ * Get all individual phones with details
+ * @route GET /api/v1/inventory/phones
+ */
+const getAllPhones = async (req, res, next) => {
+  try {
+    const {
+      page = 1,
+      limit = 20,
+      search,
+      status,
+      brand,
+      condition,
+      startDate,
+      endDate,
+      sortBy = "addedAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    // Build aggregation pipeline
+    const matchStage = {};
+
+    if (status) {
+      matchStage["phones.status"] = status;
+    }
+
+    if (condition) {
+      matchStage["phones.condition"] = condition;
+    }
+
+    if (startDate || endDate) {
+      matchStage["phones.addedAt"] = {};
+      if (startDate) matchStage["phones.addedAt"].$gte = new Date(startDate);
+      if (endDate) matchStage["phones.addedAt"].$lte = new Date(endDate);
+    }
+
+    const pipeline = [
+      { $unwind: "$phones" },
+      ...(Object.keys(matchStage).length > 0 ? [{ $match: matchStage }] : []),
+      {
+        $lookup: {
+          from: "products",
+          localField: "phones.product",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      { $unwind: "$productDetails" },
+    ];
+
+    // Add search filter
+    if (search) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { "phones.imei": { $regex: search, $options: "i" } },
+            { "productDetails.brand": { $regex: search, $options: "i" } },
+            { "productDetails.model": { $regex: search, $options: "i" } },
+            { invoiceNumber: { $regex: search, $options: "i" } },
+          ],
+        },
+      });
+    }
+
+    // Add brand filter
+    if (brand) {
+      pipeline.push({
+        $match: { "productDetails.brand": brand.toUpperCase() },
+      });
+    }
+
+    // Add sorting
+    const sortField =
+      sortBy === "addedAt" ? "phones.addedAt" : `phones.${sortBy}`;
+    pipeline.push({ $sort: { [sortField]: sortOrder === "asc" ? 1 : -1 } });
+
+    // Get total count
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const countResult = await PurchaseInvoice.aggregate(countPipeline);
+    const total = countResult[0]?.total || 0;
+
+    // Add pagination
+    const skip = (page - 1) * limit;
+    pipeline.push({ $skip: skip }, { $limit: parseInt(limit) });
+
+    // Project final structure
+    pipeline.push({
+      $project: {
+        _id: "$phones._id",
+        imei: "$phones.imei",
+        serialNumber: "$phones.serialNumber",
+        costPrice: "$phones.costPrice",
+        sellingPrice: "$phones.sellingPrice",
+        condition: "$phones.condition",
+        status: "$phones.status",
+        warrantyExpiryDate: "$phones.warrantyExpiryDate",
+        notes: "$phones.notes",
+        soldDate: "$phones.soldDate",
+        soldTo: "$phones.soldTo",
+        addedAt: "$phones.addedAt",
+        product: {
+          _id: "$productDetails._id",
+          brand: "$productDetails.brand",
+          model: "$productDetails.model",
+          displayName: "$productDetails.displayName",
+          specifications: "$productDetails.specifications",
+          sku: "$productDetails.sku",
+        },
+        invoice: {
+          _id: "$_id",
+          invoiceNumber: "$invoiceNumber",
+          invoiceDate: "$invoiceDate",
+          supplier: "$supplier",
+        },
+        profit: { $subtract: ["$phones.sellingPrice", "$phones.costPrice"] },
+      },
+    });
+
+    const phones = await PurchaseInvoice.aggregate(pipeline);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        phones,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(total / limit),
+          totalPhones: total,
+          limit: parseInt(limit),
+        },
+        summary: {
+          totalPhones: total,
+          totalValue: phones.reduce((sum, p) => sum + p.costPrice, 0),
+          totalSellingValue: phones.reduce((sum, p) => sum + p.sellingPrice, 0),
+          totalProfit: phones.reduce((sum, p) => sum + p.profit, 0),
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get phone by IMEI (detailed view)
+ * @route GET /api/v1/inventory/phones/:imei
+ */
+const getPhoneByIMEI = async (req, res, next) => {
+  try {
+    const { imei } = req.params;
+
+    const result = await PurchaseInvoice.aggregate([
+      { $unwind: "$phones" },
+      { $match: { "phones.imei": imei } },
+      {
+        $lookup: {
+          from: "products",
+          localField: "phones.product",
+          foreignField: "_id",
+          as: "productDetails",
+        },
+      },
+      { $unwind: "$productDetails" },
+      {
+        $lookup: {
+          from: "dsrassignments",
+          let: { phoneImei: "$phones.imei" },
+          pipeline: [
+            { $unwind: "$phones" },
+            { $match: { $expr: { $eq: ["$phones.imei", "$$phoneImei"] } } },
+            {
+              $lookup: {
+                from: "users",
+                localField: "dsr",
+                foreignField: "_id",
+                as: "dsrDetails",
+              },
+            },
+            {
+              $unwind: {
+                path: "$dsrDetails",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+          ],
+          as: "assignmentDetails",
+        },
+      },
+      {
+        $project: {
+          phone: {
+            imei: "$phones.imei",
+            serialNumber: "$phones.serialNumber",
+            costPrice: "$phones.costPrice",
+            sellingPrice: "$phones.sellingPrice",
+            condition: "$phones.condition",
+            status: "$phones.status",
+            warrantyExpiryDate: "$phones.warrantyExpiryDate",
+            notes: "$phones.notes",
+            soldDate: "$phones.soldDate",
+            soldTo: "$phones.soldTo",
+            addedAt: "$phones.addedAt",
+          },
+          product: "$productDetails",
+          invoice: {
+            _id: "$_id",
+            invoiceNumber: "$invoiceNumber",
+            invoiceDate: "$invoiceDate",
+            supplier: "$supplier",
+          },
+          assignment: { $arrayElemAt: ["$assignmentDetails", 0] },
+        },
+      },
+    ]);
+
+    if (!result || result.length === 0) {
+      return next(new ApiError(404, "Phone with this IMEI not found"));
+    }
+
+    res.status(200).json({
+      success: true,
+      data: result[0],
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update phone details
+ * @route PATCH /api/v1/inventory/phones/:imei
+ */
+const updatePhone = async (req, res, next) => {
+  try {
+    const { imei } = req.params;
+    const { costPrice, sellingPrice, condition, notes, warrantyExpiryDate } =
+      req.body;
+
+    const invoice = await PurchaseInvoice.findOne({ "phones.imei": imei });
+
+    if (!invoice) {
+      return next(new ApiError(404, "Phone with this IMEI not found"));
+    }
+
+    const phone = invoice.phones.find((p) => p.imei === imei);
+
+    // Only allow editing if phone is Available or Damaged
+    if (phone.status !== "Available" && phone.status !== "Damaged") {
+      return next(
+        new ApiError(400, `Cannot edit phone with status: ${phone.status}`)
+      );
+    }
+
+    // Update phone details
+    if (costPrice !== undefined) phone.costPrice = costPrice;
+    if (sellingPrice !== undefined) phone.sellingPrice = sellingPrice;
+    if (condition) phone.condition = condition;
+    if (notes !== undefined) phone.notes = notes;
+    if (warrantyExpiryDate) phone.warrantyExpiryDate = warrantyExpiryDate;
+
+    invoice.updatedBy = req.user._id;
+    await invoice.save();
+
+    logger.info(`Phone ${imei} updated by ${req.user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Phone updated successfully",
+      data: { phone },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete phone (Owner only)
+ * @route DELETE /api/v1/inventory/phones/:imei
+ */
+const deletePhone = async (req, res, next) => {
+  try {
+    const { imei } = req.params;
+
+    const invoice = await PurchaseInvoice.findOne({ "phones.imei": imei });
+
+    if (!invoice) {
+      return next(new ApiError(404, "Phone with this IMEI not found"));
+    }
+
+    const phone = invoice.phones.find((p) => p.imei === imei);
+
+    // Only allow deletion if phone is Available
+    if (phone.status !== "Available") {
+      return next(
+        new ApiError(
+          400,
+          `Cannot delete phone with status: ${phone.status}. Only Available phones can be deleted.`
+        )
+      );
+    }
+
+    // Remove phone from invoice
+    invoice.phones = invoice.phones.filter((p) => p.imei !== imei);
+
+    // If invoice has no phones left, delete the invoice
+    if (invoice.phones.length === 0) {
+      await invoice.deleteOne();
+      logger.info(
+        `Invoice ${invoice.invoiceNumber} deleted (no phones remaining) by ${req.user.email}`
+      );
+    } else {
+      await invoice.save();
+    }
+
+    logger.info(`Phone ${imei} deleted by ${req.user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Phone deleted successfully",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Add to module.exports
 module.exports = {
   createProduct,
   getAllProducts,
@@ -590,4 +935,8 @@ module.exports = {
   getStatistics,
   updatePhoneStatus,
   exportInventoryToExcel,
+  getAllPhones,
+  getPhoneByIMEI,
+  updatePhone,
+  deletePhone,
 };
