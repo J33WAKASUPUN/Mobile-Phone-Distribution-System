@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const { ApiError } = require('../middlewares/errorHandler');
 const logger = require('../utils/logger');
+const UAParser = require('ua-parser-js');
 
 /**
  * Register a new user
@@ -51,20 +52,34 @@ const register = async (req, res, next) => {
 };
 
 /**
- * Login user
+ * Extract device info from request
+ */
+const getDeviceInfo = (req) => {
+  const parser = new UAParser(req.headers['user-agent']);
+  const result = parser.getResult();
+
+  return {
+    userAgent: req.headers['user-agent'] || 'Unknown',
+    browser: result.browser.name || 'Unknown Browser',
+    os: result.os.name || 'Unknown OS',
+    device: result.device.type || 'Desktop',
+    ip: req.ip || req.connection.remoteAddress || 'Unknown IP',
+  };
+};
+
+/**
+ * Login user (UPDATED with multi-device support)
  * @route POST /api/v1/auth/login
- * @access Public
  */
 const login = async (req, res, next) => {
   try {
     const { credential, password } = req.body;
 
-    // Validate input
     if (!credential || !password) {
       return next(new ApiError(400, 'Please provide email/username and password'));
     }
 
-    // Find user by email or username (with password field)
+    // Find user
     const user = await User.findByCredentials(credential);
 
     if (!user) {
@@ -83,21 +98,25 @@ const login = async (req, res, next) => {
     // Check if account is active
     if (!user.isActive) {
       logger.warn(`Inactive account login attempt: ${user.email}`);
-      return next(new ApiError(403, 'Your account has been deactivated. Please contact administrator.'));
+      return next(new ApiError(403, 'Your account has been deactivated.'));
     }
 
-    // Update last login timestamp
+    // Extract device info
+    const deviceInfo = getDeviceInfo(req);
+
+    // Generate new token with session ID
+    const { token, sessionId, expiresAt } = user.generateAuthToken(deviceInfo);
+
+    // Add session to user (auto-removes oldest if >3 sessions)
+    await user.addSession(token, sessionId, expiresAt, deviceInfo);
+
+    // Update last login
     user.lastLogin = Date.now();
-    
-    // Update lastTokenIssuedAt to invalidate old tokens
-    user.lastTokenIssuedAt = Date.now();
-    
     await user.save({ validateBeforeSave: false });
 
-    // Generate fresh JWT token (old tokens are now invalid)
-    const token = user.generateAuthToken();
-
-    logger.info(`User logged in successfully: ${user.email} (${user.role}). Old sessions invalidated.`);
+    logger.info(
+      `User logged in: ${user.email} (${user.role}) - Device: ${deviceInfo.device} (${deviceInfo.browser} on ${deviceInfo.os}) - Active sessions: ${user.activeSessions.length}/3`
+    );
 
     res.status(200).json({
       success: true,
@@ -105,11 +124,47 @@ const login = async (req, res, next) => {
       data: {
         user: user.getPublicProfile(),
         token,
+        sessionId,
+        deviceInfo: {
+          browser: deviceInfo.browser,
+          os: deviceInfo.os,
+          device: deviceInfo.device,
+        },
+        activeSessions: user.activeSessions.length,
+        maxSessions: 3,
         tokenExpiry: process.env.JWT_EXPIRE || '7d',
       },
     });
   } catch (error) {
     logger.error(`Login error: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Get active sessions
+ * @route GET /api/v1/auth/sessions
+ */
+const getSessions = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return next(new ApiError(404, 'User not found'));
+    }
+
+    const sessions = user.getActiveSessions();
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalSessions: sessions.length,
+        maxSessions: 3,
+        currentSessionId: req.sessionId,
+        sessions,
+      },
+    });
+  } catch (error) {
     next(error);
   }
 };
@@ -189,19 +244,17 @@ const updateProfile = async (req, res, next) => {
 };
 
 /**
- * Change password
+ * Change password (revoke all sessions except current)
  * @route PUT /api/v1/auth/change-password
- * @access Private
  */
 const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return next(new ApiError(400, 'Please provide current and new password'));
+      return next(new ApiError(400, 'Please provide current and new passwords'));
     }
 
-    // Get user with password field
     const user = await User.findById(req.user._id).select('+password');
 
     if (!user) {
@@ -212,49 +265,125 @@ const changePassword = async (req, res, next) => {
     const isPasswordMatch = await user.comparePassword(currentPassword);
 
     if (!isPasswordMatch) {
-      logger.warn(`Failed password change attempt for user: ${user.email}`);
       return next(new ApiError(401, 'Current password is incorrect'));
     }
 
-    // Update password (this will trigger pre-save hook to hash it)
+    // Update password
     user.password = newPassword;
-    
-    // Set passwordChangedAt to NOW to invalidate old tokens
     user.passwordChangedAt = Date.now();
     
+    // Revoke all sessions except current
+    const currentSessionId = req.sessionId;
+    user.activeSessions = user.activeSessions.filter(
+      session => session.sessionId === currentSessionId
+    );
+
     await user.save();
 
-    // Generate new token with updated timestamp
-    const token = user.generateAuthToken();
-
-    logger.info(`Password changed successfully for user: ${user.email}`);
+    logger.info(`Password changed for ${user.email}. All other sessions revoked.`);
 
     res.status(200).json({
       success: true,
-      message: 'Password changed successfully. Please use the new token for future requests.',
+      message: 'Password changed successfully. All other devices have been logged out.',
       data: {
-        token,
         user: user.getPublicProfile(),
+        remainingSessions: 1,
       },
     });
   } catch (error) {
-    logger.error(`Password change error: ${error.message}`);
     next(error);
   }
 };
 
 /**
- * Logout user (client-side token removal)
+ * Logout (revoke current session only)
  * @route POST /api/v1/auth/logout
- * @access Private
  */
 const logout = async (req, res, next) => {
   try {
-    logger.info(`User logged out: ${req.user.email}`);
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return next(new ApiError(404, 'User not found'));
+    }
+
+    // Revoke current session only
+    await user.revokeSession(req.sessionId);
+
+    logger.info(`User logged out from current device: ${req.user.email} - Session: ${req.sessionId}`);
 
     res.status(200).json({
       success: true,
-      message: 'Logout successful',
+      message: 'Logged out successfully from this device',
+      data: {
+        remainingSessions: user.activeSessions.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Logout from all devices
+ * @route POST /api/v1/auth/logout-all
+ */
+const logoutAll = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return next(new ApiError(404, 'User not found'));
+    }
+
+    // Revoke all sessions
+    await user.revokeAllSessions();
+
+    logger.info(`User logged out from all devices: ${req.user.email}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Logged out successfully from all devices',
+      data: {
+        sessionsRevoked: user.activeSessions.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Revoke specific session
+ * @route DELETE /api/v1/auth/sessions/:sessionId
+ */
+const revokeSession = async (req, res, next) => {
+  try {
+    const { sessionId } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return next(new ApiError(404, 'User not found'));
+    }
+
+    // Check if session exists
+    const session = user.activeSessions.find(s => s.sessionId === sessionId);
+
+    if (!session) {
+      return next(new ApiError(404, 'Session not found'));
+    }
+
+    // Revoke session
+    await user.revokeSession(sessionId);
+
+    logger.info(`Session revoked by ${req.user.email}: ${sessionId}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Session revoked successfully',
+      data: {
+        remainingSessions: user.activeSessions.length,
+      },
     });
   } catch (error) {
     next(error);
@@ -289,5 +418,8 @@ module.exports = {
   updateProfile,
   changePassword,
   logout,
+  logoutAll,
+  getSessions,
+  revokeSession, 
   validateToken,
 };

@@ -75,3 +75,5 @@
 {"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:04"}
 {"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices/6913ded1b263e99dcb710c00/upload-proof - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:17"}
 {"level":"error","message":"400 - Cannot delete Verified invoice. Only Draft invoices can be deleted. - /api/v1/inventory/invoices/6909404f902cd884b6de6f87 - DELETE - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 07:00:11"}
+{"level":"error","message":"Login error: crypto.randomBytes is not a function","service":"mobile-distribution-api","timestamp":"2025-11-12 18:12:44"}
+{"level":"error","message":"500 - crypto.randomBytes is not a function - /api/v1/auth/login - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 18:12:44"}

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
 /**
  * User Schema
@@ -85,15 +86,46 @@ const userSchema = new mongoose.Schema(
       state: String,
       zipCode: String,
     },
+
+    // Active Sessions (Max 3 devices)
+    activeSessions: [
+      {
+        sessionId: {
+          type: String,
+          required: true,
+          unique: true,
+        },
+        token: {
+          type: String,
+          required: true,
+        },
+        deviceInfo: {
+          userAgent: String,
+          browser: String,
+          os: String,
+          device: String,
+          ip: String,
+        },
+        lastActivity: {
+          type: Date,
+          default: Date.now,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        expiresAt: {
+          type: Date,
+          required: true,
+        },
+      },
+    ],
     
     // Metadata
     lastLogin: {
       type: Date,
     },
     passwordChangedAt: {
-      type: Date,
-    },
-    lastTokenIssuedAt: {
       type: Date,
     },
     passwordResetToken: String,
@@ -124,6 +156,7 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ email: 1, isActive: 1 });
 userSchema.index({ username: 1, isActive: 1 });
 userSchema.index({ role: 1, isActive: 1 });
+userSchema.index({ 'activeSessions.sessionId': 1 });
 
 // ============================================
 // VIRTUALS
@@ -189,25 +222,123 @@ userSchema.methods.comparePassword = async function (enteredPassword) {
  * Generate JWT token
  * @returns {string} JWT token
  */
-userSchema.methods.generateAuthToken = function () {
-  // Update lastTokenIssuedAt BEFORE generating token
+userSchema.methods.generateAuthToken = function (deviceInfo = {}) {
+  const sessionId = crypto.randomBytes(16).toString('hex');
   const now = Math.floor(Date.now() / 1000);
+  const expiresIn = process.env.JWT_EXPIRE || '7d';
   
-  return jwt.sign(
+  // Calculate expiry timestamp
+  const expiryDuration = expiresIn.includes('d') 
+    ? parseInt(expiresIn) * 24 * 60 * 60 
+    : parseInt(expiresIn);
+  
+  const token = jwt.sign(
     {
       id: this._id.toString(),
       username: this.username,
       email: this.email,
       role: this.role,
-      iat: now, // Issued at timestamp
-      // Store this timestamp to invalidate old tokens
-      tokenVersion: now,
+      sessionId: sessionId, // Include session ID in token
+      iat: now,
     },
     process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRE || '7d',
-    }
+    { expiresIn }
   );
+
+  return { token, sessionId, expiresAt: new Date((now + expiryDuration) * 1000) };
+};
+
+// ============================================
+// Add Session to User
+// ============================================
+userSchema.methods.addSession = async function (token, sessionId, expiresAt, deviceInfo = {}) {
+  // Remove expired sessions first
+  this.activeSessions = this.activeSessions.filter(
+    session => session.expiresAt > new Date()
+  );
+
+  // If already 3 sessions, remove the oldest one
+  if (this.activeSessions.length >= 3) {
+    this.activeSessions.sort((a, b) => a.createdAt - b.createdAt);
+    this.activeSessions.shift(); // Remove oldest session
+    logger.info(`Removed oldest session for user: ${this.email}`);
+  }
+
+  // Add new session
+  this.activeSessions.push({
+    sessionId,
+    token,
+    deviceInfo,
+    lastActivity: new Date(),
+    createdAt: new Date(),
+    expiresAt,
+  });
+
+  await this.save({ validateBeforeSave: false });
+  return sessionId;
+};
+
+// ============================================
+// Validate Session
+// ============================================
+userSchema.methods.isSessionValid = function (sessionId) {
+  const session = this.activeSessions.find(s => s.sessionId === sessionId);
+  
+  if (!session) return false;
+  
+  // Check if session is expired
+  if (session.expiresAt < new Date()) {
+    return false;
+  }
+  
+  return true;
+};
+
+// ============================================
+// ✅ NEW: Update Session Activity
+// ============================================
+userSchema.methods.updateSessionActivity = async function (sessionId) {
+  const session = this.activeSessions.find(s => s.sessionId === sessionId);
+  
+  if (session) {
+    session.lastActivity = new Date();
+    await this.save({ validateBeforeSave: false });
+  }
+};
+
+// ============================================
+// Revoke Session (Logout from specific device)
+// ============================================
+userSchema.methods.revokeSession = async function (sessionId) {
+  this.activeSessions = this.activeSessions.filter(
+    session => session.sessionId !== sessionId
+  );
+  await this.save({ validateBeforeSave: false });
+};
+
+// ============================================
+// Revoke All Sessions (Logout from all devices)
+// ============================================
+userSchema.methods.revokeAllSessions = async function () {
+  this.activeSessions = [];
+  await this.save({ validateBeforeSave: false });
+};
+
+// ============================================
+// Get Active Sessions Summary
+// ============================================
+userSchema.methods.getActiveSessions = function () {
+  return this.activeSessions.map(session => ({
+    sessionId: session.sessionId,
+    device: session.deviceInfo.device || 'Unknown Device',
+    browser: session.deviceInfo.browser || 'Unknown Browser',
+    os: session.deviceInfo.os || 'Unknown OS',
+    ip: session.deviceInfo.ip || 'Unknown IP',
+    lastActivity: session.lastActivity,
+    createdAt: session.createdAt,
+    expiresAt: session.expiresAt,
+    isActive: session.expiresAt > new Date(),
+  }));
 };
 
 /**

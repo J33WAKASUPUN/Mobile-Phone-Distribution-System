@@ -5,6 +5,9 @@ const {
   getMe,
   updateProfile,
   changePassword,
+  logoutAll,
+  getSessions,
+  revokeSession,
   logout,
   validateToken,
 } = require('../controllers/authController');
@@ -18,6 +21,10 @@ const {
 } = require('../validations/schemas/authSchemas');
 
 const router = express.Router();
+
+// ============================================
+// PUBLIC ROUTES
+// ============================================
 
 /**
  * @route   POST /api/v1/auth/register
@@ -33,12 +40,23 @@ router.post('/register', validate(registerSchema), register);
  */
 router.post('/login', validate(loginSchema), login);
 
+// ============================================
+// PROTECTED ROUTES
+// ============================================
+
 /**
  * @route   GET /api/v1/auth/me
  * @desc    Get current user profile
  * @access  Private
  */
 router.get('/me', protect, getMe);
+
+/**
+ * @route   GET /api/v1/auth/validate-token
+ * @desc    Validate current JWT token
+ * @access  Private
+ */
+router.get('/validate-token', protect, validateToken);
 
 /**
  * @route   PUT /api/v1/auth/profile
@@ -49,23 +67,41 @@ router.put('/profile', protect, validate(updateProfileSchema), updateProfile);
 
 /**
  * @route   PUT /api/v1/auth/change-password
- * @desc    Change user password
+ * @desc    Change user password (keeps current session, revokes others)
  * @access  Private
  */
 router.put('/change-password', protect, validate(changePasswordSchema), changePassword);
 
+// ============================================
+// SESSION MANAGEMENT ROUTES
+// ============================================
+
+/**
+ * @route   GET /api/v1/auth/sessions
+ * @desc    Get all active sessions for current user
+ * @access  Private
+ */
+router.get('/sessions', protect, getSessions);
+
 /**
  * @route   POST /api/v1/auth/logout
- * @desc    Logout user
+ * @desc    Logout from current device only
  * @access  Private
  */
 router.post('/logout', protect, logout);
 
 /**
- * @route   GET /api/v1/auth/validate-token
- * @desc    Validate current JWT token
+ * @route   POST /api/v1/auth/logout-all
+ * @desc    Logout from all devices
  * @access  Private
  */
-router.get('/validate-token', protect, validateToken);
+router.post('/logout-all', protect, logoutAll);
+
+/**
+ * @route   DELETE /api/v1/auth/sessions/:sessionId
+ * @desc    Revoke specific session (logout from specific device)
+ * @access  Private
+ */
+router.delete('/sessions/:sessionId', protect, revokeSession);
 
 module.exports = router;
