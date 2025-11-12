@@ -1209,3 +1209,5 @@
 {"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:11"}
 {"level":"info","message":"Invoice INV-2025-010 verified by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:11"}
 {"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:19"}
+{"level":"info","message":"AWS S3 Service (v3) initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 08:48:18"}
+{"level":"info","message":"Telegram bot initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 08:48:19"}
