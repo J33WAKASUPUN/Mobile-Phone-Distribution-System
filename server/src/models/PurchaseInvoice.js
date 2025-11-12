@@ -118,6 +118,11 @@ const purchaseInvoiceSchema = new mongoose.Schema(
 
     // Financial Summary
     financials: {
+      currency: {
+        type: String,
+        default: 'LKR',
+        enum: ['LKR', 'USD', 'EUR'],
+      },
       subtotal: {
         type: Number,
         required: true,
@@ -309,7 +314,38 @@ purchaseInvoiceSchema.methods.updatePhoneStatus = async function (
   return phone;
 };
 
+/**
+ * Format currency amount
+ */
+purchaseInvoiceSchema.methods.formatCurrency = function(amount) {
+  const currency = this.financials.currency || 'LKR';
+  
+  const formatters = {
+    LKR: (amt) => `Rs. ${amt.toLocaleString('en-LK', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`,
+    USD: (amt) => `$${amt.toLocaleString('en-US', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`,
+    EUR: (amt) => `€${amt.toLocaleString('de-DE', { 
+      minimumFractionDigits: 2, 
+      maximumFractionDigits: 2 
+    })}`,
+  };
+  
+  return formatters[currency] ? formatters[currency](amount) : `${currency} ${amount.toFixed(2)}`;
+};
+
+/**
+ * Get summary with formatted currency
+ */
 purchaseInvoiceSchema.methods.getSummary = function () {
+  const totalCost = this.financials.totalCost;
+  const totalSellingPrice = this.financials.totalSellingPrice;
+  const expectedProfit = totalSellingPrice - totalCost;
+
   return {
     id: this._id.toString(),
     invoiceNumber: this.invoiceNumber,
@@ -321,10 +357,20 @@ purchaseInvoiceSchema.methods.getSummary = function () {
     totalPhones: this.phones.length,
     availablePhones: this.phones.filter((p) => p.status === "Available").length,
     soldPhones: this.phones.filter((p) => p.status === "Sold").length,
-    totalCost: this.financials.totalCost,
-    totalSellingPrice: this.financials.totalSellingPrice,
-    expectedProfit:
-      this.financials.totalSellingPrice - this.financials.totalCost,
+    
+    // Add currency field
+    currency: this.financials.currency || 'LKR',
+    
+    // Add both raw numbers and formatted strings
+    totalCost,
+    totalCostFormatted: this.formatCurrency(totalCost),
+    
+    totalSellingPrice,
+    totalSellingPriceFormatted: this.formatCurrency(totalSellingPrice),
+    
+    expectedProfit,
+    expectedProfitFormatted: this.formatCurrency(expectedProfit),
+    
     invoiceStatus: this.invoiceStatus,
     paymentStatus: this.payment?.status || "Pending",
   };

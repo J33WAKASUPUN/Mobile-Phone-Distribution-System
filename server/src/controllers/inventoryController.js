@@ -388,15 +388,47 @@ const deleteProduct = async (req, res, next) => {
 };
 
 /**
- * Update invoice
+ * Update invoice (Draft only)
  * @route PUT /api/v1/inventory/invoices/:id
  */
 const updateInvoice = async (req, res, next) => {
   try {
-    const invoice = await PurchaseInvoice.findByIdAndUpdate(
+    const invoice = await PurchaseInvoice.findById(req.params.id);
+
+    if (!invoice) {
+      return next(new ApiError(404, 'Invoice not found'));
+    }
+
+    // Only allow editing Draft invoices
+    if (invoice.invoiceStatus !== 'Draft') {
+      return next(
+        new ApiError(
+          400,
+          `Cannot edit ${invoice.invoiceStatus} invoice. Only Draft invoices can be edited.`
+        )
+      );
+    }
+
+    // Prevent editing if phones are assigned
+    const hasAssignedPhones = invoice.phones.some(
+      (phone) => phone.status !== 'Available'
+    );
+
+    if (hasAssignedPhones) {
+      return next(
+        new ApiError(
+          400,
+          'Cannot edit invoice. Some phones are already assigned.'
+        )
+      );
+    }
+
+    // Allow updates
+    const updatedInvoice = await PurchaseInvoice.findByIdAndUpdate(
       req.params.id,
       {
         ...req.body,
+        invoiceStatus: 'Draft', // Keep as draft
         updatedBy: req.user._id,
       },
       {
@@ -405,18 +437,14 @@ const updateInvoice = async (req, res, next) => {
       }
     );
 
-    if (!invoice) {
-      return next(new ApiError(404, "Invoice not found"));
-    }
-
     logger.info(
-      `Invoice updated by ${req.user.email}: ${invoice.invoiceNumber}`
+      `Draft invoice updated by ${req.user.email}: ${updatedInvoice.invoiceNumber}`
     );
 
     res.status(200).json({
       success: true,
-      message: "Invoice updated successfully",
-      data: { invoice: invoice.getSummary() },
+      message: 'Invoice updated successfully',
+      data: { invoice: updatedInvoice.getSummary() },
     });
   } catch (error) {
     next(error);
@@ -467,6 +495,118 @@ const uploadInvoiceProof = async (req, res, next) => {
       data: {
         invoiceProof: invoice.invoiceProof,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Verify invoice (requires invoice proof image)
+ * @route PATCH /api/v1/inventory/invoices/:id/verify
+ */
+const verifyInvoice = async (req, res, next) => {
+  try {
+    const invoice = await PurchaseInvoice.findById(req.params.id);
+
+    if (!invoice) {
+      return next(new ApiError(404, 'Invoice not found'));
+    }
+
+    // Can only verify Draft invoices
+    if (invoice.invoiceStatus !== 'Draft') {
+      return next(
+        new ApiError(
+          400,
+          `Invoice is already ${invoice.invoiceStatus}. Cannot verify.`
+        )
+      );
+    }
+
+    // MUST have invoice proof uploaded
+    if (!invoice.invoiceProof || !invoice.invoiceProof.url) {
+      return next(
+        new ApiError(
+          400,
+          'Invoice proof image is required for verification. Please upload invoice proof first.'
+        )
+      );
+    }
+
+    // Verify the invoice
+    invoice.invoiceStatus = 'Verified';
+    invoice.verifiedBy = req.user._id;
+    invoice.verifiedAt = new Date();
+    invoice.updatedBy = req.user._id;
+
+    await invoice.save();
+
+    logger.info(
+      `Invoice ${invoice.invoiceNumber} verified by ${req.user.email}`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Invoice verified successfully. This invoice is now permanent and cannot be edited.',
+      data: {
+        invoice: invoice.getSummary(),
+        verifiedAt: invoice.verifiedAt,
+        verifiedBy: req.user.email,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete invoice (Draft only)
+ * @route DELETE /api/v1/inventory/invoices/:id
+ */
+const deleteInvoice = async (req, res, next) => {
+  try {
+    const invoice = await PurchaseInvoice.findById(req.params.id);
+
+    if (!invoice) {
+      return next(new ApiError(404, 'Invoice not found'));
+    }
+
+    // Only allow deletion of Draft invoices
+    if (invoice.invoiceStatus !== 'Draft') {
+      return next(
+        new ApiError(
+          400,
+          `Cannot delete ${invoice.invoiceStatus} invoice. Only Draft invoices can be deleted.`
+        )
+      );
+    }
+
+    // Check if any phones are already assigned/sold
+    const hasAssignedPhones = invoice.phones.some(
+      (phone) => phone.status !== 'Available'
+    );
+
+    if (hasAssignedPhones) {
+      return next(
+        new ApiError(
+          400,
+          'Cannot delete invoice. Some phones are already assigned or sold.'
+        )
+      );
+    }
+
+    // Soft delete by changing status to Cancelled
+    invoice.invoiceStatus = 'Cancelled';
+    invoice.updatedBy = req.user._id;
+    await invoice.save();
+
+    logger.info(
+      `Invoice ${invoice.invoiceNumber} cancelled by ${req.user.email}`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Invoice cancelled successfully',
     });
   } catch (error) {
     next(error);
@@ -930,6 +1070,8 @@ module.exports = {
   getInvoiceById,
   updateInvoice,
   uploadInvoiceProof,
+  deleteInvoice,
+  verifyInvoice,
   searchByIMEI,
   getAvailableStock,
   getStatistics,

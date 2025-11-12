@@ -105,15 +105,16 @@ const downloadProductTemplate = async (req, res, next) => {
 };
 
 /**
- * Generate Excel template for invoice import
+ * Generate Excel template for invoice import (COLOR OPTIONAL)
  * @route GET /api/v1/inventory/import/templates/invoices
  */
 const downloadInvoiceTemplate = async (req, res, next) => {
   try {
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Invoices Template');
+    const invoiceSheet = workbook.addWorksheet('Invoices Template');
 
-    worksheet.columns = [
+    // ✅ Main invoice template columns
+    invoiceSheet.columns = [
       { header: 'Invoice Number*', key: 'invoiceNumber', width: 20 },
       { header: 'Invoice Date* (YYYY-MM-DD)', key: 'invoiceDate', width: 20 },
       { header: 'Invoice Time* (HH:MM)', key: 'invoiceTime', width: 15 },
@@ -121,7 +122,10 @@ const downloadInvoiceTemplate = async (req, res, next) => {
       { header: 'Supplier Contact', key: 'supplierContact', width: 20 },
       { header: 'Supplier Phone', key: 'supplierPhone', width: 15 },
       { header: 'Supplier Email', key: 'supplierEmail', width: 25 },
-      { header: 'Product ID*', key: 'productId', width: 25 },
+      { header: 'Brand*', key: 'brand', width: 15 },
+      { header: 'Model*', key: 'model', width: 25 },
+      { header: 'Storage*', key: 'storage', width: 12 },
+      { header: 'Color (Optional)', key: 'color', width: 15 }, // Changed to optional
       { header: 'IMEI* (15 digits)', key: 'imei', width: 20 },
       { header: 'Cost Price*', key: 'costPrice', width: 15 },
       { header: 'Selling Price*', key: 'sellingPrice', width: 15 },
@@ -135,45 +139,130 @@ const downloadInvoiceTemplate = async (req, res, next) => {
     ];
 
     // Style header
-    worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    worksheet.getRow(1).fill = {
+    invoiceSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    invoiceSheet.getRow(1).fill = {
       type: 'pattern',
       pattern: 'solid',
       fgColor: { argb: 'FF4472C4' },
     };
 
-    // Sample data
-    worksheet.addRow({
-      invoiceNumber: 'INV-2024-001',
-      invoiceDate: '2024-01-15',
-      invoiceTime: '10:30',
-      supplierName: 'Tech Distributors Lanka',
-      supplierContact: 'Mr. Kasun',
-      supplierPhone: '0771234567',
-      supplierEmail: 'kasun@techdist.lk',
-      productId: 'PASTE_PRODUCT_ID_HERE',
-      imei: '123456789012345',
-      costPrice: 280000,
-      sellingPrice: 310000,
-      condition: 'New',
-      warrantyExpiry: '2025-01-15',
-      discountAmount: 5000,
-      shippingCost: 2000,
-      paymentMethod: 'Bank Transfer',
-      paymentStatus: 'Paid',
-      notes: 'Initial stock purchase',
-    });
+    // ✅ Get real products from database for sample data
+    const sampleProducts = await Product.find({ isActive: true })
+      .limit(3)
+      .select('brand model specifications');
+
+    if (sampleProducts.length > 0) {
+      sampleProducts.forEach((product, index) => {
+        invoiceSheet.addRow({
+          invoiceNumber: `INV-2025-${String(index + 1).padStart(3, '0')}`,
+          invoiceDate: '2025-01-15',
+          invoiceTime: '10:30',
+          supplierName: 'Tech Distributors Lanka',
+          supplierContact: 'Mr. Kasun',
+          supplierPhone: '0112345678',
+          supplierEmail: 'kasun@techdist.lk',
+          brand: product.brand,
+          model: product.model,
+          storage: product.specifications.storage,
+          color: product.specifications.color, // Real color from database
+          imei: `12345678901234${index}`,
+          costPrice: 350000,
+          sellingPrice: 380000,
+          condition: 'New',
+          warrantyExpiry: '2026-01-15',
+          discountAmount: 5000,
+          shippingCost: 2000,
+          paymentMethod: 'Bank Transfer',
+          paymentStatus: 'Paid',
+          notes: `Sample ${product.brand} ${product.model}`,
+        });
+      });
+    } else {
+      // Fallback sample
+      invoiceSheet.addRow({
+        invoiceNumber: 'INV-2025-001',
+        invoiceDate: '2025-01-15',
+        invoiceTime: '10:30',
+        supplierName: 'Tech Distributors Lanka',
+        supplierContact: 'Mr. Kasun',
+        supplierPhone: '0112345678',
+        supplierEmail: 'kasun@techdist.lk',
+        brand: 'SAMSUNG',
+        model: 'Galaxy S23 Ultra',
+        storage: '256GB',
+        color: '', // ✅ Empty to show it's optional
+        imei: '123456789012345',
+        costPrice: 350000,
+        sellingPrice: 380000,
+        condition: 'New',
+        warrantyExpiry: '2026-01-15',
+        discountAmount: 5000,
+        shippingCost: 2000,
+        paymentMethod: 'Bank Transfer',
+        paymentStatus: 'Paid',
+        notes: 'Color optional - system will auto-match',
+      });
+    }
 
     // Add instructions
-    worksheet.addRow({});
-    worksheet.addRow({ invoiceNumber: 'INSTRUCTIONS:' }).font = { bold: true, color: { argb: 'FFFF0000' } };
-    worksheet.addRow({ invoiceNumber: '1. Get Product IDs from: GET /api/v1/inventory/products' });
-    worksheet.addRow({ invoiceNumber: '2. Same invoice number = phones grouped under one invoice' });
-    worksheet.addRow({ invoiceNumber: '3. Each row = one phone with unique IMEI' });
-    worksheet.addRow({ invoiceNumber: '4. Condition: New, Refurbished, Open Box, Like New' });
-    worksheet.addRow({ invoiceNumber: '5. Payment Method: Cash, Bank Transfer, Cheque, Credit, Mixed' });
-    worksheet.addRow({ invoiceNumber: '6. Payment Status: Paid, Partial, Pending, Overdue' });
-    worksheet.addRow({ invoiceNumber: '7. Delete sample row before importing' });
+    invoiceSheet.addRow({});
+    invoiceSheet.addRow({ invoiceNumber: 'INSTRUCTIONS:' }).font = { 
+      bold: true, 
+      color: { argb: 'FFFF0000' } 
+    };
+    invoiceSheet.addRow({ invoiceNumber: '1. Brand, Model, and Storage are REQUIRED' });
+    invoiceSheet.addRow({ invoiceNumber: '2. Color is OPTIONAL - leave blank to auto-match first available variant' });
+    invoiceSheet.addRow({ invoiceNumber: '3. If multiple colors exist for same product, system will ask you to specify' });
+    invoiceSheet.addRow({ invoiceNumber: '4. Same invoice number = phones grouped under one invoice' });
+    invoiceSheet.addRow({ invoiceNumber: '5. Each row = one phone with unique IMEI' });
+    invoiceSheet.addRow({ invoiceNumber: '6. Condition: New, Refurbished, Open Box, Like New' });
+    invoiceSheet.addRow({ invoiceNumber: '7. Payment Method: Cash, Bank Transfer, Cheque, Credit, Mixed' });
+    invoiceSheet.addRow({ invoiceNumber: '8. Payment Status: Paid, Partial, Pending, Overdue' });
+    invoiceSheet.addRow({ invoiceNumber: '9. Delete sample rows before importing' });
+
+    // ✅ ADD SECOND SHEET: Product Catalog for reference
+    const catalogSheet = workbook.addWorksheet('Product Catalog (Reference)');
+
+    catalogSheet.columns = [
+      { header: 'Brand', key: 'brand', width: 15 },
+      { header: 'Model', key: 'model', width: 30 },
+      { header: 'Storage', key: 'storage', width: 12 },
+      { header: 'Color', key: 'color', width: 20 },
+      { header: 'Status', key: 'status', width: 12 },
+    ];
+
+    // Style header
+    catalogSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    catalogSheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2E7D32' }, // Green background
+    };
+
+    // Get all active products from database
+    const allProducts = await Product.find({ isActive: true })
+      .select('brand model specifications')
+      .sort({ brand: 1, model: 1 });
+
+    // Add products to catalog sheet
+    allProducts.forEach(product => {
+      catalogSheet.addRow({
+        brand: product.brand,
+        model: product.model,
+        storage: product.specifications.storage,
+        color: product.specifications.color,
+        status: 'Available',
+      });
+    });
+
+    // Add note
+    catalogSheet.addRow({});
+    catalogSheet.addRow({ 
+      brand: 'NOTE: Use exact Brand, Model, and Storage from this list.' 
+    }).font = { bold: true, color: { argb: 'FFFF0000' } };
+    catalogSheet.addRow({ 
+      brand: 'Color can be left blank - system will auto-match if only one variant exists.' 
+    });
 
     const filename = `invoices_import_template_${new Date().toISOString().split('T')[0]}.xlsx`;
 
@@ -184,7 +273,7 @@ const downloadInvoiceTemplate = async (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
 
     await workbook.xlsx.write(res);
-    logger.info(`Invoice template downloaded by ${req.user.email}`);
+    logger.info(`Invoice template with product catalog downloaded by ${req.user.email}`);
     res.end();
   } catch (error) {
     next(error);
@@ -208,20 +297,13 @@ const importProducts = async (req, res, next) => {
     const products = [];
     const errors = [];
 
-    // Get total rows
-    const totalRows = worksheet.rowCount;
-
     // Process each row (skip header row 1)
     worksheet.eachRow((row, rowNumber) => {
-      // Skip header row
-      if (rowNumber === 1) {
-        return;
-      }
+      if (rowNumber === 1) return;
 
-      // Skip empty rows
       const brand = row.getCell(1).value;
       if (!brand || brand.toString().trim() === '' || brand.toString().toUpperCase() === 'INSTRUCTIONS:') {
-        return; // Skip instruction rows and empty rows
+        return;
       }
 
       try {
@@ -231,7 +313,6 @@ const importProducts = async (req, res, next) => {
         const ram = row.getCell(5).value;
         const color = row.getCell(6).value;
 
-        // Validate required fields
         if (!brand || !model || !storage || !ram || !color) {
           errors.push({
             row: rowNumber,
@@ -241,7 +322,6 @@ const importProducts = async (req, res, next) => {
           return;
         }
 
-        // Parse arrays (comma-separated values)
         const connectivity = row.getCell(13).value 
           ? row.getCell(13).value.toString().split(',').map(s => s.trim())
           : [];
@@ -283,13 +363,9 @@ const importProducts = async (req, res, next) => {
           row: rowNumber,
           error: error.message,
         });
-        logger.error(`Row ${rowNumber}: Parse error - ${error.message}`);
       }
     });
 
-    logger.info(`Total rows processed: ${products.length}, Errors: ${errors.length}`);
-
-    // Insert products
     let successCount = 0;
     const createdProducts = [];
 
@@ -304,7 +380,6 @@ const importProducts = async (req, res, next) => {
           product: `${productData.brand} ${productData.model}`,
           error: error.message,
         });
-        logger.error(`Failed to create product: ${productData.brand} ${productData.model} - ${error.message}`);
       }
     }
 
@@ -326,7 +401,7 @@ const importProducts = async (req, res, next) => {
 };
 
 /**
- * Import purchase invoices from Excel
+ * Import purchase invoices from Excel (SMART COLOR MATCHING)
  * @route POST /api/v1/inventory/import/invoices
  */
 const importInvoices = async (req, res, next) => {
@@ -337,110 +412,80 @@ const importInvoices = async (req, res, next) => {
 
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(req.file.buffer);
-
     const worksheet = workbook.getWorksheet(1);
-    const invoicesMap = new Map(); // Group phones by invoice number
+
+    const invoicesMap = new Map();
     const errors = [];
 
     worksheet.eachRow((row, rowNumber) => {
-      // Skip header row
-      if (rowNumber === 1) {
-        return;
-      }
+      if (rowNumber === 1) return; // Skip header
 
-      // Skip empty rows and instruction rows
       const invoiceNumber = row.getCell(1).value;
       if (!invoiceNumber || invoiceNumber.toString().trim() === '' || invoiceNumber.toString().toUpperCase() === 'INSTRUCTIONS:') {
         return;
       }
 
       try {
-        const invoiceDate = row.getCell(2).value;
-        const invoiceTime = row.getCell(3).value;
-        const productId = row.getCell(8).value;
-        const imei = row.getCell(9).value;
-        const costPrice = row.getCell(10).value;
-        const sellingPrice = row.getCell(11).value;
+        const brand = row.getCell(8).value?.toString().trim().toUpperCase();
+        const model = row.getCell(9).value?.toString().trim();
+        const storage = row.getCell(10).value?.toString().trim();
+        const color = row.getCell(11).value?.toString().trim() || ''; // Optional
+        const imei = row.getCell(12).value?.toString().replace(/\s/g, '');
 
-        // Validate required fields
-        if (!invoiceNumber || !invoiceDate || !invoiceTime || !productId || !imei || !costPrice || !sellingPrice) {
-          errors.push({
-            row: rowNumber,
-            error: 'Missing required fields',
-            data: { invoiceNumber, invoiceDate, invoiceTime, productId, imei, costPrice, sellingPrice },
-          });
-          return;
-        }
-
-        // Validate IMEI (15 digits)
-        const imeiStr = imei.toString().replace(/\s/g, '');
-        if (!/^[0-9]{15}$/.test(imeiStr)) {
-          errors.push({
-            row: rowNumber,
-            error: `Invalid IMEI: ${imei} (must be 15 digits)`,
-          });
-          return;
-        }
-
-        // Create or get invoice entry
         if (!invoicesMap.has(invoiceNumber.toString())) {
           invoicesMap.set(invoiceNumber.toString(), {
             invoiceNumber: invoiceNumber.toString().toUpperCase(),
-            invoiceDate: new Date(invoiceDate),
-            invoiceTime: invoiceTime.toString(),
+            invoiceDate: new Date(row.getCell(2).value),
+            invoiceTime: row.getCell(3).value?.toString(),
             supplier: {
-              name: row.getCell(4).value ? row.getCell(4).value.toString() : 'Unknown Supplier',
-              contactPerson: row.getCell(5).value ? row.getCell(5).value.toString() : '',
-              phone: row.getCell(6).value ? row.getCell(6).value.toString() : '',
-              email: row.getCell(7).value ? row.getCell(7).value.toString() : '',
+              name: row.getCell(4).value?.toString() || 'Unknown Supplier',
+              contactPerson: row.getCell(5).value?.toString() || '',
+              phone: row.getCell(6).value?.toString() || '',
+              email: row.getCell(7).value?.toString() || '',
             },
             phones: [],
             financials: {
-              discount: {
-                amount: row.getCell(14).value ? parseFloat(row.getCell(14).value) : 0,
-              },
-              shippingCost: row.getCell(15).value ? parseFloat(row.getCell(15).value) : 0,
+              tax: { amount: 0, percentage: 0 },
+              discount: { amount: parseFloat(row.getCell(17).value) || 0, percentage: 0 },
+              shippingCost: parseFloat(row.getCell(18).value) || 0,
             },
             payment: {
-              method: row.getCell(16).value ? row.getCell(16).value.toString() : 'Cash',
-              status: row.getCell(17).value ? row.getCell(17).value.toString() : 'Paid',
+              method: row.getCell(19).value?.toString() || 'Cash',
+              status: row.getCell(20).value?.toString() || 'Paid',
+              paidAmount: 0,
             },
-            notes: row.getCell(18).value ? row.getCell(18).value.toString() : '',
+            notes: row.getCell(21).value?.toString() || '',
+            invoiceStatus: 'Draft',
           });
-          logger.info(`Created invoice entry: ${invoiceNumber}`);
         }
 
-        // Add phone to invoice
-        const invoice = invoicesMap.get(invoiceNumber.toString());
-        invoice.phones.push({
-          product: productId.toString(),
-          imei: imeiStr,
-          costPrice: parseFloat(costPrice),
-          sellingPrice: parseFloat(sellingPrice),
-          condition: row.getCell(12).value ? row.getCell(12).value.toString() : 'New',
-          warrantyExpiryDate: row.getCell(13).value ? new Date(row.getCell(13).value) : undefined,
+        invoicesMap.get(invoiceNumber.toString()).phones.push({
+          brand,
+          model,
+          storage,
+          color, // Can be empty
+          imei,
+          costPrice: parseFloat(row.getCell(13).value),
+          sellingPrice: parseFloat(row.getCell(14).value),
+          condition: row.getCell(15).value?.toString() || 'New',
+          warrantyExpiryDate: row.getCell(16).value ? new Date(row.getCell(16).value) : undefined,
         });
 
-        logger.info(`Row ${rowNumber}: Added phone ${imeiStr} to invoice ${invoiceNumber}`);
-
+        logger.info(`Row ${rowNumber}: Parsed ${brand} ${model} ${storage}${color ? ` ${color}` : ' (no color)'}`);
       } catch (error) {
         errors.push({
           row: rowNumber,
           error: error.message,
         });
-        logger.error(`Row ${rowNumber}: Parse error - ${error.message}`);
       }
     });
 
-    logger.info(`Total invoices to create: ${invoicesMap.size}`);
-
-    // Insert invoices
+    // Smart product matching
     let successCount = 0;
     const createdInvoices = [];
 
     for (const [invoiceNumber, invoiceData] of invoicesMap) {
       try {
-        // Check for duplicate invoice number
         const existing = await PurchaseInvoice.findOne({ invoiceNumber });
         if (existing) {
           errors.push({
@@ -450,37 +495,109 @@ const importInvoices = async (req, res, next) => {
           continue;
         }
 
-        // Check for duplicate IMEIs
-        let skipInvoice = false;
+        const phonesWithProductIds = [];
+
         for (const phone of invoiceData.phones) {
+          // Build query (case-insensitive)
+          const query = {
+            brand: new RegExp(`^${phone.brand}$`, 'i'),
+            model: new RegExp(`^${phone.model}$`, 'i'),
+            'specifications.storage': new RegExp(`^${phone.storage}$`, 'i'),
+            isActive: true,
+          };
+
+          // Find all matching products
+          const matchingProducts = await Product.find(query);
+
+          if (matchingProducts.length === 0) {
+            errors.push({
+              invoice: invoiceNumber,
+              imei: phone.imei,
+              error: `No product found: ${phone.brand} ${phone.model} ${phone.storage}`,
+            });
+            continue;
+          }
+
+          let product;
+
+          if (phone.color && phone.color.trim() !== '') {
+            // Color specified - exact match
+            product = matchingProducts.find(p => 
+              p.specifications.color.toLowerCase() === phone.color.toLowerCase()
+            );
+
+            if (!product) {
+              const availableColors = matchingProducts.map(p => p.specifications.color).join(', ');
+              errors.push({
+                invoice: invoiceNumber,
+                imei: phone.imei,
+                error: `Color "${phone.color}" not found. Available: ${availableColors}`,
+              });
+              continue;
+            }
+          } else {
+            // No color specified - check if multiple variants exist
+            if (matchingProducts.length > 1) {
+              const availableColors = matchingProducts.map(p => p.specifications.color).join(', ');
+              errors.push({
+                invoice: invoiceNumber,
+                imei: phone.imei,
+                error: `Multiple colors available for ${phone.brand} ${phone.model} ${phone.storage}. Please specify: ${availableColors}`,
+              });
+              continue;
+            }
+
+            // Only one variant - auto-select
+            product = matchingProducts[0];
+            logger.info(`IMEI ${phone.imei}: Auto-matched to ${product.specifications.color}`);
+          }
+
+          // Check duplicate IMEI
           const existingIMEI = await PurchaseInvoice.findOne({
             'phones.imei': phone.imei,
           });
+
           if (existingIMEI) {
             errors.push({
               invoice: invoiceNumber,
               imei: phone.imei,
               error: 'IMEI already exists in system',
             });
-            skipInvoice = true;
-            break;
+            continue;
           }
+
+          phonesWithProductIds.push({
+            product: product._id,
+            imei: phone.imei,
+            costPrice: phone.costPrice,
+            sellingPrice: phone.sellingPrice,
+            condition: phone.condition,
+            warrantyExpiryDate: phone.warrantyExpiryDate,
+          });
         }
 
-        if (skipInvoice) continue;
+        if (phonesWithProductIds.length === 0) {
+          errors.push({
+            invoice: invoiceNumber,
+            error: 'No valid phones to import',
+          });
+          continue;
+        }
 
+        // Create invoice
+        invoiceData.phones = phonesWithProductIds;
         invoiceData.createdBy = req.user._id;
 
         const invoice = await PurchaseInvoice.create(invoiceData);
         createdInvoices.push(invoice);
         successCount++;
+
         logger.info(`Invoice created: ${invoice.invoiceNumber} with ${invoice.phones.length} phones`);
       } catch (error) {
         errors.push({
           invoice: invoiceNumber,
           error: error.message,
         });
-        logger.error(`Failed to create invoice ${invoiceNumber}: ${error.message}`);
       }
     }
 
@@ -488,12 +605,12 @@ const importInvoices = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      message: `Successfully imported ${successCount} invoices`,
+      message: `Successfully imported ${successCount} invoices as Draft. Upload invoice proofs to verify them.`,
       data: {
         successCount,
         totalInvoices: invoicesMap.size,
         errors: errors.length > 0 ? errors : undefined,
-        invoices: createdInvoices.map(inv => inv.getSummary()),
+        invoices: createdInvoices.map((inv) => inv.getSummary()),
       },
     });
   } catch (error) {

@@ -1125,3 +1125,87 @@
 {"level":"debug","message":"User authenticated: john.dsr@mobiledist.com (dsr)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:01:40"}
 {"level":"info","message":"2 phones returned from assignment ASG-20251111-286","service":"mobile-distribution-api","timestamp":"2025-11-11 07:01:42"}
 {"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:02:07"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:47"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:47"}
+{"level":"info","message":"Created invoice entry: INV-2024-004","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:47"}
+{"level":"info","message":"Row 2: Added phone 123456789012390 to invoice INV-2024-004","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:47"}
+{"level":"info","message":"Total invoices to create: 1","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:47"}
+{"level":"info","message":"Invoice created: INV-2024-004 with 1 phones","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:48"}
+{"level":"info","message":"1 invoices imported by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-11 07:34:48"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:42:44"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:44:08"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:44:49"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:46:00"}
+{"level":"info","message":"Inventory exported to Excel by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-11 07:46:01"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-11 07:47:51"}
+{"level":"info","message":"AWS S3 Service (v3) initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-11 07:51:48"}
+{"level":"info","message":"Telegram bot initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-11 07:51:49"}
+{"level":"info","message":"MongoDB Connected: ac-8paihev-shard-00-02.b6gmsjh.mongodb.net","service":"mobile-distribution-api","timestamp":"2025-11-11 07:51:51"}
+{"level":"info","message":"AWS S3 Service (v3) initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:25"}
+{"level":"info","message":"Telegram bot initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:27"}
+{"level":"info","message":"MongoDB Connected: ac-8paihev-shard-00-01.b6gmsjh.mongodb.net","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:31"}
+{"level":"info","message":"\n                                                                               \n  📱 Mobile Phone Distribution System API                         \n  ---------------------------------------                                                                      \n  🚀 Server Status:    RUNNING                                                \n  🌍 Environment:      DEVELOPMENT                                                 \n  🔌 Port:             5000                                                       \n  📡 API Version:      v1                                                          \n  📊 MongoDB:          CONNECTED                                               \n  ☁️  AWS S3:           CONFIGURED                                                  \n                                                                               \n  🔗 Access Points:                                                            \n    • API Base:       http://localhost:5000                                       \n    • Health Check:   http://localhost:5000/health                                \n    • API Routes:     http://localhost:5000/api/v1                                \n                                                                               \n  📊 Route Summary:                                                            \n    • Total Routes:   68                                                          \n    • GET:            27                                                          \n    • POST:           18                                                          \n    • PUT:            7                                                           \n    • PATCH:          11                                                          \n    • DELETE:         5                                                           \n                                                                               \n\n      ","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:31"}
+{"level":"info","message":"✅ Server initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:31"}
+{"level":"info","message":"⏰ Server started at: 2025-11-12T00:54:31.451Z","service":"mobile-distribution-api","timestamp":"2025-11-12 06:24:31"}
+{"level":"warn","message":"Expired token attempt: jwt expired","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:04"}
+{"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:04"}
+{"level":"info","message":"User logged in successfully: admin@mobiledist.com (owner). Old sessions invalidated.","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:14"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:44"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:44"}
+{"level":"info","message":"Purchase invoice created by admin@mobiledist.com: INV-2025-TEST-002 with 3 phones","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:45"}
+{"level":"warn","message":"Expired token attempt: jwt expired","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:17"}
+{"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices/6913ded1b263e99dcb710c00/upload-proof - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:17"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:30"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:30"}
+{"level":"info","message":"File uploaded to S3: invoices/1762910070676-1747458117794.jpeg","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:34"}
+{"level":"info","message":"Invoice proof uploaded for INV-2025-TEST-002 by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:34"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:52:56"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:52:56"}
+{"level":"info","message":"Invoice INV-2025-TEST-002 verified by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 06:52:56"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:53:10"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:59:38"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 06:59:38"}
+{"level":"info","message":"Invoice INV-2025-00035 cancelled by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 06:59:38"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:00:11"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:00:11"}
+{"level":"error","message":"400 - Cannot delete Verified invoice. Only Draft invoices can be deleted. - /api/v1/inventory/invoices/6909404f902cd884b6de6f87 - DELETE - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 07:00:11"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:01:13"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:01:13"}
+{"level":"info","message":"Invoice template downloaded by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 07:01:13"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:10:21"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:10:21"}
+{"level":"info","message":"Row 2: Matched SAMSUNG Galaxy S23 Ultra 256GB Phantom Black","service":"mobile-distribution-api","timestamp":"2025-11-12 07:10:22"}
+{"level":"info","message":"Row 3: Matched APPLE iPhone 15 Pro Max 256GB Natural Titanium","service":"mobile-distribution-api","timestamp":"2025-11-12 07:10:22"}
+{"level":"info","message":"0 invoices imported by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 07:10:22"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:14:29"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:15:45"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 07:15:45"}
+{"level":"info","message":"Row 2: Matched APPLE iPhone SE 256GB Phantom Black","service":"mobile-distribution-api","timestamp":"2025-11-12 07:15:45"}
+{"level":"info","message":"Row 3: Matched APPLE iPhone 14 256GB Natural Titanium","service":"mobile-distribution-api","timestamp":"2025-11-12 07:15:45"}
+{"level":"info","message":"0 invoices imported by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 07:15:45"}
+{"level":"info","message":"AWS S3 Service (v3) initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:14"}
+{"level":"info","message":"Telegram bot initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:17"}
+{"level":"info","message":"MongoDB Connected: ac-8paihev-shard-00-00.b6gmsjh.mongodb.net","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:20"}
+{"level":"info","message":"\n                                                                               \n  📱 Mobile Phone Distribution System API                         \n  ---------------------------------------                                                                      \n  🚀 Server Status:    RUNNING                                                \n  🌍 Environment:      DEVELOPMENT                                                 \n  🔌 Port:             5000                                                       \n  📡 API Version:      v1                                                          \n  📊 MongoDB:          CONNECTED                                               \n  ☁️  AWS S3:           CONFIGURED                                                  \n                                                                               \n  🔗 Access Points:                                                            \n    • API Base:       http://localhost:5000                                       \n    • Health Check:   http://localhost:5000/health                                \n    • API Routes:     http://localhost:5000/api/v1                                \n                                                                               \n  📊 Route Summary:                                                            \n    • Total Routes:   68                                                          \n    • GET:            27                                                          \n    • POST:           18                                                          \n    • PUT:            7                                                           \n    • PATCH:          11                                                          \n    • DELETE:         5                                                           \n                                                                               \n\n      ","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:20"}
+{"level":"info","message":"✅ Server initialized successfully","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:20"}
+{"level":"info","message":"⏰ Server started at: 2025-11-12T02:40:20.059Z","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:20"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:35"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:35"}
+{"level":"info","message":"Invoice template with product catalog downloaded by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 08:10:36"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:14"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:14"}
+{"level":"info","message":"Row 2: Parsed XIAOMI Redmi Note 13 Pro 256GB Midnight Black","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:14"}
+{"level":"info","message":"Row 3: Parsed ONEPLUS OnePlus 11 256GB Eternal Green","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:14"}
+{"level":"info","message":"Row 4: Parsed APPLE iPhone 14 128GB Midnight","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:14"}
+{"level":"info","message":"Invoice created: INV-2025-010 with 3 phones","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:16"}
+{"level":"info","message":"1 invoices imported by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:16"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:59"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:14:59"}
+{"level":"info","message":"File uploaded to S3: invoices/1762915499599-1747458117794.jpeg","service":"mobile-distribution-api","timestamp":"2025-11-12 08:15:03"}
+{"level":"info","message":"Invoice proof uploaded for INV-2025-010 by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 08:15:03"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:15:24"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:15:57"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:11"}
+{"level":"debug","message":"Authorization successful for admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:11"}
+{"level":"info","message":"Invoice INV-2025-010 verified by admin@mobiledist.com","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:11"}
+{"level":"debug","message":"User authenticated: admin@mobiledist.com (owner)","service":"mobile-distribution-api","timestamp":"2025-11-12 08:16:19"}

@@ -10,6 +10,8 @@ const {
   getInvoiceById,
   updateInvoice,
   uploadInvoiceProof,
+  deleteInvoice,
+  verifyInvoice,
   searchByIMEI,
   getAvailableStock,
   getStatistics,
@@ -138,6 +140,20 @@ router.post(
   upload.single("invoiceProof"),
   uploadInvoiceProof
 );
+
+/**
+ * @route   DELETE /api/v1/inventory/invoices/:id
+ * @desc    Delete invoice (Draft only)
+ * @access  Private (Owner only)
+ */
+router.delete('/invoices/:id', protect, authorize('owner'), deleteInvoice);
+
+/**
+ * @route   PATCH /api/v1/inventory/invoices/:id/verify
+ * @desc    Verify invoice (requires proof image)
+ * @access  Private (Owner only)
+ */
+router.patch('/invoices/:id/verify', protect, authorize('owner'), verifyInvoice);
 
 // ============================================
 // INVENTORY MANAGEMENT ROUTES

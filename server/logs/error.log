@@ -72,3 +72,6 @@
 {"level":"error","message":"401 - Token expired. Please login again. - /api/v1/dsr-assignments/691289b2098ace30df0f893a/phones/854697422136135/sold - PATCH - ::1","service":"mobile-distribution-api","timestamp":"2025-11-11 06:54:47"}
 {"level":"error","message":"401 - Token expired. Please login again. - /api/v1/dsr-schedules/69075d3f307a85cda79da224/date/2025-11-11 - GET - ::1","service":"mobile-distribution-api","timestamp":"2025-11-11 06:57:25"}
 {"level":"error","message":"401 - Token expired. Please login again. - /api/v1/dsr-assignments/691289b2098ace30df0f893a/return - PATCH - ::1","service":"mobile-distribution-api","timestamp":"2025-11-11 07:01:20"}
+{"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:41:04"}
+{"level":"error","message":"401 - Token expired. Please login again. - /api/v1/inventory/invoices/6913ded1b263e99dcb710c00/upload-proof - POST - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 06:44:17"}
+{"level":"error","message":"400 - Cannot delete Verified invoice. Only Draft invoices can be deleted. - /api/v1/inventory/invoices/6909404f902cd884b6de6f87 - DELETE - ::1","service":"mobile-distribution-api","timestamp":"2025-11-12 07:00:11"}
